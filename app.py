@@ -12,22 +12,22 @@ import time
 
 # --- 1. CONFIGURACIÓN DE PÁGINA Y ESTILOS ---
 st.set_page_config(
-    page_title="Gestión de Salud - HealthTrack",
+    page_title="Gestión de Salud - Asistente Vital",
     page_icon="🏥",
     layout="centered"
 )
 
-# Colores: Azul Marino (#001f3f), Dorado (#FFD700), Plateado (#C0C0C0), Verde/Amarillo alertas
+# Colores modificados para cumplir: Letras oscuras sobre fondos claros.
 st.markdown("""
     <style>
     /* Fondo general */
     .stApp {
-        background-color: #f4f4f4;
+        background-color: #f4f4f4; /* Fondo claro */
     }
     
     /* TÍTULO CENTRADO EN ESPAÑOL */
     h1 {
-        color: #001f3f; /* Azul Marino */
+        color: #001f3f; /* Azul Marino (Oscuro) */
         text-align: center;
         font-family: 'Arial', sans-serif;
         border-bottom: 3px solid #FFD700; /* Dorado */
@@ -37,42 +37,45 @@ st.markdown("""
     }
     
     h2, h3 {
-        color: #001f3f;
+        color: #001f3f; /* Texto Oscuro */
     }
 
-    /* BARRA LATERAL (Sidebar) */
+    /* BARRA LATERAL (Sidebar) - CAMBIO SOLICITADO: Fondo Claro, Letras Oscuras */
     section[data-testid="stSidebar"] {
-        background-color: #001f3f; /* Azul Marino */
+        background-color: #E8EAF6; /* Azul Grisáceo muy claro */
     }
     section[data-testid="stSidebar"] h1, 
     section[data-testid="stSidebar"] h2, 
     section[data-testid="stSidebar"] h3, 
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div {
-        color: #FFD700 !important; /* Texto Dorado */
+    section[data-testid="stSidebar"] div,
+    section[data-testid="stSidebar"] p {
+        color: #001f3f !important; /* Texto Azul Marino Oscuro */
     }
 
     /* BOTONES */
     div.stButton > button {
-        background-color: #FFD700; /* Dorado */
-        color: #001f3f; /* Texto Azul */
-        border: 2px solid #C0C0C0; /* Borde Plateado */
+        background-color: #FFD700; /* Dorado (Fondo claro/medio) */
+        color: #001f3f; /* Texto Azul Oscuro - Legible */
+        border: 2px solid #C0C0C0; 
         border-radius: 10px;
         font-weight: bold;
         width: 100%;
         transition: 0.3s;
     }
     div.stButton > button:hover {
-        background-color: #DAA520; /* Dorado oscuro */
-        color: white;
+        background-color: #DAA520; 
+        color: white; /* Excepción en hover para contraste */
         border-color: #FFD700;
     }
 
     /* INPUTS */
     div[data-baseweb="input"] {
+        background-color: #ffffff; /* Fondo blanco */
         border: 1px solid #001f3f;
         border-radius: 5px;
+        color: #000000; /* Texto negro */
     }
 
     /* MENSAJES DE ESTADO */
@@ -256,7 +259,8 @@ def main():
     # BARRA LATERAL
     with st.sidebar:
         st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=100)
-        st.markdown("## HEALTH TRACK AI")
+        # NOMBRE CAMBIADO A ESPAÑOL
+        st.markdown("## ASISTENTE VITAL SALUD")
         st.markdown("---")
         if st.session_state.paciente:
             st.markdown(f"👤 **PACIENTE:**\n\n### {st.session_state.paciente}")
