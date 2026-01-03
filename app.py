@@ -10,13 +10,52 @@ from gtts import gTTS
 import io
 import time
 
-# --- 1. CONFIGURACIÓN DE PÁGINA Y ESTILOS ---
+# --- 1. CONFIGURACIÓN DE PÁGINA (Debe ser lo primero) ---
 st.set_page_config(
     page_title="Gestión de Salud - HealthTrack",
     page_icon="🏥",
     layout="centered"
 )
 
+# ==========================================
+# BLOQUE DE DIAGNÓSTICO (CHIVATOS)
+# ==========================================
+
+# 1. Mensaje de prueba al inicio para verificar que el script carga
+st.write("1. La aplicación ha iniciado correctamente...")
+
+# Configuración Base de Datos TiDB (La definimos aquí para probarla inmediatamente)
+CONFIG_DB = {
+    'host': 'gateway01.us-east-1.prod.aws.tidbcloud.com',
+    'port': 4000,
+    'user': '39hpidXc8KL7sEA.root',
+    'password': 'HwJbEPQQNL7rhRjF',
+    'database': 'test',
+    'autocommit': True,
+    'ssl_verify_cert': True,
+    'ssl_ca': '/etc/ssl/certs/ca-certificates.crt'
+}
+
+try:
+    # 2. Mensaje antes de conectar
+    st.write("2. Intentando conectar a la base de datos...")
+    
+    # INTENTO DE CONEXIÓN DE PRUEBA
+    test_conn = mysql.connector.connect(**CONFIG_DB)
+    
+    # 3. Mensaje después de conectar
+    st.write("3. ¡Conexión exitosa!")
+    test_conn.close() # Cerramos la prueba para no dejarla abierta
+
+except Exception as e:
+    st.error(f"Error al conectar: {e}")
+
+# ==========================================
+# FIN DEL BLOQUE DE DIAGNÓSTICO
+# ==========================================
+
+
+# --- ESTILOS ---
 # ESTILOS CORREGIDOS: Letras oscuras sobre fondos claros + Inputs amarillo/azul
 st.markdown("""
     <style>
@@ -115,19 +154,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 2. CREDENCIALES Y CONFIGURACIÓN (Lógica Original) ---
-
-# Configuración Base de Datos TiDB
-CONFIG_DB = {
-    'host': 'gateway01.us-east-1.prod.aws.tidbcloud.com',
-    'port': 4000,
-    'user': '39hpidXc8KL7sEA.root',
-    'password': 'HwJbEPQQNL7rhRjF',
-    'database': 'test',
-    'autocommit': True,
-    'ssl_verify_cert': True,
-    'ssl_ca': '/etc/ssl/certs/ca-certificates.crt'
-}
+# --- 2. OTRAS CREDENCIALES (La DB ya está arriba) ---
 
 # Credenciales de Notificación
 TELEGRAM_TOKEN = '8444851001:AAEZBqfJcgUasPLeu1nsD2xcG0OrkPvrwbM'
@@ -144,6 +171,7 @@ tz_co = pytz.timezone('America/Bogota')
 
 def get_db_connection():
     try:
+        # Usa la CONFIG_DB que definimos al principio
         return mysql.connector.connect(**CONFIG_DB)
     except Exception as e:
         st.error(f"❌ No se ha podido establecer conexión con la base de datos: {e}")
@@ -524,4 +552,7 @@ def main():
             fecha_prog = st.date_input("Fecha programada (DD/MM/AAAA)", min_value=date.today())
             hora_prog = st.time_input("Hora programada (Formato 24h)")
             
-  
+# EJECUTOR PRINCIPAL
+if __name__ == "__main__":
+    main()
+
