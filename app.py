@@ -12,22 +12,22 @@ import time
 
 # --- 1. CONFIGURACIÓN DE PÁGINA Y ESTILOS ---
 st.set_page_config(
-    page_title="Gestión de Salud - Asistente Vital",
+    page_title="Gestión de Salud - HealthTrack",
     page_icon="🏥",
     layout="centered"
 )
 
-# Colores modificados para cumplir: Letras oscuras sobre fondos claros.
+# ESTILOS CORREGIDOS: Letras oscuras sobre fondos claros + Inputs amarillo/azul
 st.markdown("""
     <style>
     /* Fondo general */
     .stApp {
-        background-color: #f4f4f4; /* Fondo claro */
+        background-color: #f4f4f4;
     }
     
     /* TÍTULO CENTRADO EN ESPAÑOL */
     h1 {
-        color: #001f3f; /* Azul Marino (Oscuro) */
+        color: #001f3f; /* Azul Marino */
         text-align: center;
         font-family: 'Arial', sans-serif;
         border-bottom: 3px solid #FFD700; /* Dorado */
@@ -37,12 +37,12 @@ st.markdown("""
     }
     
     h2, h3 {
-        color: #001f3f; /* Texto Oscuro */
+        color: #001f3f;
     }
 
-    /* BARRA LATERAL (Sidebar) - CAMBIO SOLICITADO: Fondo Claro, Letras Oscuras */
+    /* BARRA LATERAL - Fondo claro, letras oscuras */
     section[data-testid="stSidebar"] {
-        background-color: #E8EAF6; /* Azul Grisáceo muy claro */
+        background-color: #E8F4F8; /* Azul muy claro */
     }
     section[data-testid="stSidebar"] h1, 
     section[data-testid="stSidebar"] h2, 
@@ -50,37 +50,67 @@ st.markdown("""
     section[data-testid="stSidebar"] span, 
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] div,
-    section[data-testid="stSidebar"] p {
-        color: #001f3f !important; /* Texto Azul Marino Oscuro */
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] .stMarkdown {
+        color: #001f3f !important; /* Texto Azul Oscuro */
     }
 
-    /* BOTONES */
+    /* BOTONES - Fondo claro, letras oscuras */
     div.stButton > button {
-        background-color: #FFD700; /* Dorado (Fondo claro/medio) */
-        color: #001f3f; /* Texto Azul Oscuro - Legible */
-        border: 2px solid #C0C0C0; 
+        background-color: #FFE680; /* Amarillo claro */
+        color: #001f3f; /* Texto Azul Oscuro */
+        border: 2px solid #C0C0C0;
         border-radius: 10px;
         font-weight: bold;
         width: 100%;
         transition: 0.3s;
     }
     div.stButton > button:hover {
-        background-color: #DAA520; 
-        color: white; /* Excepción en hover para contraste */
+        background-color: #FFD700;
+        color: #000000;
         border-color: #FFD700;
     }
 
-    /* INPUTS */
-    div[data-baseweb="input"] {
-        background-color: #ffffff; /* Fondo blanco */
-        border: 1px solid #001f3f;
+    /* CAMPOS DE ENTRADA - Fondo AMARILLO INTENSO, Letras AZUL INTENSO */
+    div[data-baseweb="input"] > div,
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    textarea,
+    .stTextInput input,
+    .stNumberInput input,
+    .stDateInput input,
+    .stTimeInput input,
+    .stTextArea textarea {
+        background-color: #FFD700 !important; /* Amarillo intenso */
+        color: #00008B !important; /* Azul intenso */
+        border: 2px solid #001f3f !important;
         border-radius: 5px;
-        color: #000000; /* Texto negro */
+        font-weight: 600 !important;
+    }
+    
+    /* Asegurar color de texto en inputs */
+    input::placeholder {
+        color: #4B0082 !important; /* Azul-violeta para placeholders */
+        opacity: 0.8;
+    }
+
+    /* Labels de inputs - oscuros sobre fondo claro */
+    label {
+        color: #001f3f !important;
+        font-weight: 600;
     }
 
     /* MENSAJES DE ESTADO */
     div[data-testid="stNotification"] {
         border-left: 5px solid #FFD700;
+    }
+    
+    /* Asegurar legibilidad en selectbox y radio */
+    .stSelectbox label,
+    .stRadio label {
+        color: #001f3f !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -259,8 +289,7 @@ def main():
     # BARRA LATERAL
     with st.sidebar:
         st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=100)
-        # NOMBRE CAMBIADO A ESPAÑOL
-        st.markdown("## ASISTENTE VITAL SALUD")
+        st.markdown("## ASISTENTE INTEGRAL DE SALUD")
         st.markdown("---")
         if st.session_state.paciente:
             st.markdown(f"👤 **PACIENTE:**\n\n### {st.session_state.paciente}")
@@ -495,91 +524,4 @@ def main():
             fecha_prog = st.date_input("Fecha programada (DD/MM/AAAA)", min_value=date.today())
             hora_prog = st.time_input("Hora programada (Formato 24h)")
             
-            if st.form_submit_button("PROGRAMAR Y NOTIFICAR"):
-                # Preparar datos
-                datos = {
-                    "paciente": st.session_state.paciente,
-                    "prog_categoria": categoria,
-                    "prog_fecha": fecha_prog,
-                    "prog_hora": str(hora_prog)
-                }
-                # Asignar al campo correcto
-                if categoria == "Examen Médico": datos["ex_tipo"] = tipo_detalle
-                else: datos["cita_tipo"] = tipo_detalle
-                
-                st.session_state.datos = datos
-                st.session_state.datos_extra = {"lugar": lugar, "detalle": tipo_detalle}
-                st.session_state.paso = 'confirmar_prog'
-                st.rerun()
-        
-        if st.button("🔙 Volver"): st.session_state.paso = 'menu'; st.rerun()
-
-    # --- PANTALLA 8: CONFIRMACIÓN Y ENVÍO REAL (Opción 5) ---
-    elif st.session_state.paso == 'confirmar_prog':
-        d = st.session_state.datos
-        ext = st.session_state.datos_extra
-        
-        msg_res = f"Cita Programada: {d['prog_categoria']} ({ext['detalle']}) en {ext['lugar']} el {d['prog_fecha'].strftime('%d/%m/%Y')} a las {d['prog_hora']}."
-        
-        st.subheader("🔔 Confirmación de Envío")
-        st.info(msg_res)
-        
-        # Voz
-        hablar(f"{msg_res}. Se han programado las notificaciones. ¿Desea confirmar el envío ahora?")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("✅ CONFIRMAR Y ENVIAR ALERTAS"):
-                with st.spinner("Guardando y enviando correos/telegram..."):
-                    if guardar_db(d):
-                        # ENVÍO REAL DE NOTIFICACIÓN
-                        enviar_notificaciones(msg_res, st.session_state.paciente)
-                        
-                        st.success("¡Notificaciones enviadas exitosamente!")
-                        hablar("Confirmación exitosa. Se han enviado los recordatorios a su correo y Telegram.")
-                        time.sleep(4)
-                        st.session_state.paso = 'menu'
-                        st.rerun()
-        with col2:
-            if st.button("❌ CORREGIR"):
-                st.session_state.paso = 'prog_form'
-                st.rerun()
-
-    # --- PANTALLA 9: HISTORIAL ---
-    elif st.session_state.paso == 'historial':
-        st.subheader(f"📂 Historial Reciente: {st.session_state.paciente}")
-        
-        conn = get_db_connection()
-        if conn:
-            cursor = conn.cursor()
-            query = """
-                SELECT fecha_registro, med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha 
-                FROM registros_salud 
-                WHERE paciente LIKE %s ORDER BY fecha_registro DESC LIMIT 4
-            """
-            cursor.execute(query, (st.session_state.paciente,))
-            registros = cursor.fetchall()
-            conn.close()
-            
-            if registros:
-                hablar(f"He encontrado {len(registros)} registros recientes para {st.session_state.paciente}. Aquí tiene un resumen.")
-                for reg in registros:
-                    with st.container():
-                        col_a, col_b = st.columns([1, 4])
-                        with col_a:
-                            st.write(f"📅 **{reg[0].strftime('%d/%m')}**")
-                        with col_b:
-                            if reg[1]: st.info(f"💊 **Medicina:** {reg[1]} | Retiro: {reg[2]}")
-                            if reg[3]: st.warning(f"🧪 **Examen:** {reg[3]} | Solicitud: {reg[4]}")
-                            if reg[5]: st.success(f"🩺 **Cita:** {reg[5]} | Solicitud: {reg[6]}")
-                            if reg[7]: st.error(f"📅 **Programado:** {reg[7]} el {reg[8]}")
-            else:
-                st.warning("No se encontraron registros recientes.")
-                hablar("No encontré registros recientes para este paciente.")
-        
-        if st.button("🔙 Volver al Menú"):
-            st.session_state.paso = 'menu'
-            st.rerun()
-
-if __name__ == "__main__":
-    main()
+  
