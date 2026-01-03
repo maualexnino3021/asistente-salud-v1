@@ -1,0 +1,6 @@
+streamlit
+mysql-connector-python
+holidays
+pytz
+requests
+gTTS
