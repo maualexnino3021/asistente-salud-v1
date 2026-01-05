@@ -52,8 +52,7 @@ TELEGRAM_DISPLAY_PHONE = "🇨🇴 +57 324 2818869" # ID Visual para usuario
 festivos_co = holidays.CO(years=[2026, 2027, 2028, 2029])
 tz_co = pytz.timezone('America/Bogota')
 
-# URLs de Imágenes
-AVATAR_URL = "https://i.ibb.co/zVFp4SmV/avatar-Mauricio.png"
+# URLs de Imágenes (SE ELIMINÓ AVATAR_URL)
 CIUDAD_URL = "https://i.ibb.co/QjpntM88/i6.png"
 ABUELO_URL = "https://i.ibb.co/spG69fPs/i7.png"
 PORTADA_URL = "https://i.ibb.co/jZb8bxGk/i8.jpg"
@@ -63,18 +62,18 @@ PORTADA_URL = "https://i.ibb.co/jZb8bxGk/i8.jpg"
 # ======================================================================
 
 def aplicar_estilos():
-    # Lógica de fondo: Portada al inicio, Avatar en menú, Imágenes específicas en secciones
-    if st.session_state.paso in ['bienvenida', 'solicitar_nombre']:
+    # Lógica de fondo: Portada al inicio y por defecto, Imágenes específicas en secciones
+    if st.session_state.paso in ['bienvenida', 'solicitar_nombre', 'menu_principal', 'mostrar_resumen']:
         bg_image = PORTADA_URL
     elif st.session_state.paso in ['flujo_medicinas', 'flujo_examenes']:
         bg_image = CIUDAD_URL
     elif st.session_state.paso in ['flujo_citas', 'flujo_fechas_programadas']:
         bg_image = ABUELO_URL
     else:
-        bg_image = AVATAR_URL # Fondo por defecto para menú/resumen
+        bg_image = PORTADA_URL 
     
-    # Opacidad de la superposición dependiendo de la imagen para legibilidad
-    overlay_opacity = "0.85" if bg_image != PORTADA_URL else "0.3"
+    # Opacidad de la superposición
+    overlay_opacity = "0.85" if bg_image != PORTADA_URL else "0.4"
 
     st.markdown(f"""
     <style>
@@ -126,22 +125,23 @@ def aplicar_estilos():
             font-size: 16px;
         }}
         
-        /* Botón Cancelar (Estilo Específico) */
-        .boton-cancelar {{
-            background-color: #FFD700 !important; /* Amarillo intenso */
-            color: #00008B !important; /* Azul intenso */
-            border: 2px solid #000000 !important;
+        /* ESTILO UNIFICADO PARA TODOS LOS BOTONES (Sí, No, Volver, Cancelar) */
+        .stButton > button {{
+            background-color: #FFD700 !important; /* Amarillo Intenso */
+            color: #0000CD !important; /* Azul Intenso */
+            border: 3px solid #000000 !important; /* Borde Negro (Fondo Negro solicitado) */
             font-weight: 800 !important;
+            font-size: 1.2rem !important; /* 20% más grande */
+            border-radius: 12px !important;
+            padding: 0.5rem 1rem !important;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4) !important;
             width: 100%;
         }}
         
-        /* Botones Generales */
-        .stButton > button {{
-            background: linear-gradient(135deg, #00ff00, #008000);
-            color: white !important;
-            font-weight: 700;
-            border: none;
-            border-radius: 10px;
+        /* Efecto Hover para botones */
+        .stButton > button:hover {{
+            transform: scale(1.02);
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.6) !important;
         }}
         
         /* Mensajes de voz */
@@ -166,16 +166,6 @@ def aplicar_estilos():
             font-weight: 600;
             font-size: 0.8rem !important; /* Letra más pequeña */
         }}
-        
-        /* Avatar Header */
-        .avatar-header {{
-            vertical-align: middle;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-right: 15px;
-            border: 2px solid #0066ff;
-        }}
 
         /* Responsividad */
         @media (max-width: 640px) {{
@@ -183,6 +173,7 @@ def aplicar_estilos():
                 padding: 1rem;
             }}
             h1 {{ font-size: 1.5rem !important; }}
+            .stButton > button {{ font-size: 1rem !important; }}
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -327,18 +318,7 @@ def mostrar_boton_cancelar():
     """Botón superior derecha: CANCELAR Y REGRESAR. Se llama solo en MAIN."""
     col_spacer, col_btn = st.columns([8, 2])
     with col_btn:
-        st.markdown("""
-        <style>
-        div[data-testid="column"]:nth-of-type(2) button {
-            background-color: #FFD700 !important;
-            color: #00008B !important;
-            border: 2px solid #000000 !important;
-            font-weight: 800 !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Key única para evitar DuplicateWidgetID
+        # El estilo ya está aplicado globalmente en aplicar_estilos()
         if st.button("CANCELAR Y REGRESAR", key="btn_cancel_global"):
             st.session_state.paso = 'menu_principal'
             st.session_state.subfase = 0
@@ -398,10 +378,9 @@ def main():
     inicializar_session_state()
     aplicar_estilos()
     
-    # Encabezado con Avatar Pequeño
-    st.markdown(f"""
-    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-        <img src="{AVATAR_URL}" class="avatar-header">
+    # Encabezado (Sin Avatar, solo texto)
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 20px;">
         <h1 style="margin: 0; display: inline;">ASISTENTE MÉDICO</h1>
     </div>
     """, unsafe_allow_html=True)
@@ -1209,3 +1188,4 @@ def mostrar_resumen_final():
 
 if __name__ == "__main__":
     main()
+
