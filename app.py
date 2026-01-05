@@ -20,15 +20,18 @@ import os
 # 0. CONFIGURACIÓN INICIAL
 # ======================================================================
 
-# Configuración de página
+# 1. Configuración de la pestaña (breve y concisa)
 st.set_page_config(
-    page_title="ASISTENTE DE AGENDAMIENTO Y RECORDATORIO DE RETIRO DE MEDICINAS, EXÁMENES CLÍNICOS Y CONSULTAS MÉDICAS.
-                                        Sistema Inteligente de Recordatorios Médicos
-                                      Desarrollado por Mauricio Niño Gamboa. Enero 2026.",
+    page_title="Asistente Médico - Mauricio Niño G.",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# 2. Título y créditos dentro de la aplicación
+st.title("ASISTENTE DE AGENDAMIENTO Y RECORDATORIO DE RETIRO DE MEDICINAS, EXÁMENES CLÍNICOS Y CONSULTAS MÉDICAS.")
+st.subheader("Sistema Inteligente de Recordatorios Médicos")
+st.caption("Desarrollado por Mauricio Niño Gamboa. Enero 2026.")
 
 # Configuración de Base de Datos
 DB_CONFIG = {
@@ -1348,4 +1351,5 @@ def mostrar_resumen_final():
 
 if __name__ == "__main__":
     main()
+
 
