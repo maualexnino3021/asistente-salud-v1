@@ -22,7 +22,9 @@ import os
 
 # Configuración de página
 st.set_page_config(
-    page_title="ASISTENTE DE AGENDAMIENTO Y RECORDATORIO DE GESTIONES MÉDICAS",
+    page_title="ASISTENTE DE AGENDAMIENTO Y RECORDATORIO DE RETIRO DE MEDICINAS, EXÁMENES CLÍNICOS Y CONSULTAS MÉDICAS.
+                                        Sistema Inteligente de Recordatorios Médicos
+                                      Desarrollado por Mauricio Niño Gamboa. Enero 2026.",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -1346,3 +1348,4 @@ def mostrar_resumen_final():
 
 if __name__ == "__main__":
     main()
+
