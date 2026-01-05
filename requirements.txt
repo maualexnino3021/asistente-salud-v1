@@ -1,6 +1,7 @@
-streamlit==1.31.0
-mysql-connector-python==8.3.0
-holidays==0.40
-pytz==2024.1
-gTTS==2.5.0
-requests==2.31.0
+streamlit
+mysql-connector-python=
+holidays
+pytz
+gTTS
+requests
+
