@@ -1073,5 +1073,23 @@ elif st.session_state.step == 15:
         
         hora = st.time_input("Hora (HH:MM):", key="prog_hora")
         
-        if st.
-\<Streaming stoppped because the conversation grew too long for this model\>
+            if st.button("✅ Confirmar Hora", use_container_width=True):
+            st.session_state.paciente['prog_hora'] = hora.strftime("%H:%M")
+            
+            # Guardar en base de datos
+            if guardar_en_db(st.session_state.paciente):
+                mensaje_final = f"Perfecto, {st.session_state.nombre_paciente_global}. Hemos registrado su fecha programada para {st.session_state.paciente.get('prog_fecha_str')} a las {st.session_state.paciente.get('prog_hora')}."
+                st.success(mensaje_final)
+                reproducir_audio(mensaje_final)
+                
+                # Enviar notificaciones
+                mensaje_notif = f"FECHA PROGRAMADA REGISTRADA - Tipo: {st.session_state.paciente.get('prog_categoria', 'N/A')}\nFecha: {st.session_state.paciente.get('prog_fecha_str', 'N/A')}\nHora: {st.session_state.paciente.get('prog_hora', 'N/A')}"
+                enviar_notificaciones(mensaje_notif, st.session_state.nombre_paciente_global)
+                
+                # Limpiar estado de programación
+                for key in list(st.session_state.keys()):
+                    if key.startswith('prog_'):
+                        del st.session_state[key]
+                
+                st.session_state.step = 50
+                st.rerun()
