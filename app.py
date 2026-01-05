@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 import time
 import base64
 import os
+import random
 
 # ======================================================================
 # 0. CONFIGURACIÓN INICIAL
@@ -52,28 +53,35 @@ TELEGRAM_DISPLAY_PHONE = "🇨🇴 +57 324 2818869" # ID Visual para usuario
 festivos_co = holidays.CO(years=[2026, 2027, 2028, 2029])
 tz_co = pytz.timezone('America/Bogota')
 
-# URLs de Imágenes (SE ELIMINÓ AVATAR_URL)
+# URLs de Imágenes y Fondos (Lista para rotación)
 CIUDAD_URL = "https://i.ibb.co/QjpntM88/i6.png"
 ABUELO_URL = "https://i.ibb.co/spG69fPs/i7.png"
 PORTADA_URL = "https://i.ibb.co/jZb8bxGk/i8.jpg"
+
+FONDO_IMAGENES = [CIUDAD_URL, ABUELO_URL, PORTADA_URL]
 
 # ======================================================================
 # 1. ESTILOS CSS PERSONALIZADOS
 # ======================================================================
 
 def aplicar_estilos():
-    # Lógica de fondo: Portada al inicio y por defecto, Imágenes específicas en secciones
-    if st.session_state.paso in ['bienvenida', 'solicitar_nombre', 'menu_principal', 'mostrar_resumen']:
-        bg_image = PORTADA_URL
-    elif st.session_state.paso in ['flujo_medicinas', 'flujo_examenes']:
-        bg_image = CIUDAD_URL
-    elif st.session_state.paso in ['flujo_citas', 'flujo_fechas_programadas']:
-        bg_image = ABUELO_URL
-    else:
-        bg_image = PORTADA_URL 
+    # Lógica de rotación de fondo:
+    # Si el paso o subfase ha cambiado, seleccionamos una nueva imagen aleatoria
+    # asegurando que no sea la misma que la anterior.
+    identificador_paso = f"{st.session_state.paso}_{st.session_state.subfase}"
     
-    # Opacidad de la superposición
-    overlay_opacity = "0.85" if bg_image != PORTADA_URL else "0.4"
+    if st.session_state.last_step_id != identificador_paso:
+        # Filtrar la imagen actual para no repetir
+        opciones_disponibles = [img for img in FONDO_IMAGENES if img != st.session_state.current_bg_url]
+        nueva_imagen = random.choice(opciones_disponibles)
+        
+        st.session_state.current_bg_url = nueva_imagen
+        st.session_state.last_step_id = identificador_paso
+
+    bg_image = st.session_state.current_bg_url
+    
+    # Opacidad de la superposición (35% de blanco sobre la imagen para reducir nitidez)
+    overlay_opacity = "0.35" 
 
     st.markdown(f"""
     <style>
@@ -112,6 +120,10 @@ def aplicar_estilos():
             font-weight: 800;
             text-shadow: 2px 2px 4px rgba(255, 215, 0, 0.3);
             margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
         }}
         
         /* Inputs */
@@ -223,10 +235,22 @@ def calcular_espera_voz(texto):
     return (len(texto) / 16) + 1.5
 
 def mostrar_mensaje_voz(texto, esperar=True):
-    """Muestra mensaje, fuerza reproducción y espera si es necesario"""
+    """
+    Muestra mensaje y controla que el audio NO se repita si el texto es el mismo.
+    Espera solo si es la primera vez que se reproduce.
+    """
     # Eliminar asteriscos del texto mostrado en pantalla
     texto_limpio = texto.replace("**", "")
+    
+    # Mostrar siempre la burbuja de texto visual
     st.markdown(f'<div class="mensaje-voz">🔊 <strong>Asistente:</strong> {texto_limpio}</div>', unsafe_allow_html=True)
+    
+    # Verificar si este texto ya fue reproducido recientemente
+    if st.session_state.last_played_text == texto_limpio:
+        return # Si ya se reprodujo, no hacer nada más (ni audio ni sleep)
+
+    # Si es texto nuevo, procedemos a generar audio y esperar
+    st.session_state.last_played_text = texto_limpio # Actualizar el último texto reproducido
     
     audio_file = generar_audio(texto_limpio)
     if audio_file and os.path.exists(audio_file):
@@ -250,8 +274,8 @@ def mostrar_mensaje_voz(texto, esperar=True):
         """
         st.components.v1.html(audio_html, height=0)
         
-        # Simular tiempo de espera del audio para respetar el ritmo de la conversación
-        # Esto evita que el usuario vea el siguiente botón antes de que termine la frase
+        # Esperar solo si es la primera vez que se presenta este texto
+        # Esto asegura que las opciones no aparezcan hasta terminar de hablar
         if esperar:
             duracion = calcular_espera_voz(texto_limpio)
             time.sleep(duracion)
@@ -388,6 +412,11 @@ def inicializar_session_state():
     if 'valor_temporal' not in st.session_state: st.session_state.valor_temporal = None
     if 'ver_historial' not in st.session_state: st.session_state.ver_historial = False
     if 'contexto_varias' not in st.session_state: st.session_state.contexto_varias = False
+    
+    # Nuevas variables de estado para control de audio y fondo
+    if 'last_played_text' not in st.session_state: st.session_state.last_played_text = ""
+    if 'current_bg_url' not in st.session_state: st.session_state.current_bg_url = PORTADA_URL
+    if 'last_step_id' not in st.session_state: st.session_state.last_step_id = ""
 
 # ======================================================================
 # 6. INTERFAZ PRINCIPAL
@@ -397,10 +426,14 @@ def main():
     inicializar_session_state()
     aplicar_estilos()
     
-    # Encabezado (Sin Avatar, solo texto)
-    st.markdown("""
+    # Encabezado (Con ícono de planificación y avatar pequeño al lado derecho)
+    # Se utiliza ABUELO_URL como avatar pequeño
+    st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1 style="margin: 0; display: inline;">ASISTENTE MÉDICO</h1>
+        <h1 style="margin: 0; display: inline-flex; align-items: center; justify-content: center;">
+            ASISTENTE MÉDICO 📅 
+            <img src="{ABUELO_URL}" style="width: 50px; height: 50px; border-radius: 50%; margin-left: 10px; border: 2px solid white; box-shadow: 0px 0px 5px rgba(0,0,0,0.5);">
+        </h1>
     </div>
     """, unsafe_allow_html=True)
     
