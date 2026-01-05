@@ -1,6 +1,6 @@
 # ======================================================================
 # GESTOR DE SALUD - STREAMLIT APP
-# Adaptación del código Python de Google Colab
+# Adaptación ESTRICTA del código Python de Google Colab
 # ======================================================================
 
 import streamlit as st
@@ -57,7 +57,7 @@ CIUDAD_URL = "https://i.ibb.co/QjpntM88/i6.png"
 ABUELO_URL = "https://i.ibb.co/spG69fPs/i7.png"
 
 # ======================================================================
-# 1. ESTILOS CSS PERSONALIZADOS
+# 1. ESTILOS CSS PERSONALIZADOS (CORREGIDO)
 # ======================================================================
 
 def aplicar_estilos():
@@ -74,7 +74,7 @@ def aplicar_estilos():
             background-attachment: fixed;
         }}
         
-        /* Contenedor principal */
+        /* Contenedor principal - TEXTO NEGRO SOBRE BLANCO */
         .main .block-container {{
             padding: 2rem;
             background: rgba(255, 255, 255, 0.95);
@@ -83,6 +83,12 @@ def aplicar_estilos():
             backdrop-filter: blur(10px);
             max-width: 1200px;
             margin: auto;
+            color: #000000 !important;
+        }}
+        
+        /* Texto general NEGRO */
+        p, div, span, label {{
+            color: #000000 !important;
         }}
         
         /* Título principal */
@@ -100,16 +106,27 @@ def aplicar_estilos():
             font-weight: 700;
         }}
         
-        /* Inputs de texto */
+        /* Inputs de texto - AMARILLO con texto AZUL OSCURO */
         .stTextInput > div > div > input,
         .stTextArea > div > div > textarea,
-        .stSelectbox > div > div > select {{
+        .stSelectbox > div > div > select,
+        .stNumberInput > div > div > input {{
             background-color: #ffff00 !important;
             color: #0000cd !important;
             border: 3px solid #000000 !important;
             border-radius: 10px;
             font-weight: 600;
             font-size: 16px;
+        }}
+        
+        /* Radio buttons - TEXTO NEGRO */
+        .stRadio > label {{
+            color: #000000 !important;
+            font-weight: 600;
+        }}
+        
+        .stRadio > div > label > div {{
+            color: #000000 !important;
         }}
         
         /* Botones principales */
@@ -130,33 +147,27 @@ def aplicar_estilos():
             box-shadow: 0 6px 20px rgba(0, 255, 0, 0.6);
         }}
         
-        /* Botones secundarios */
-        .stButton > button[kind="secondary"] {{
-            background: linear-gradient(135deg, #ffd700, #ff8c00);
-        }}
-        
         /* Cajas de información */
         .stAlert {{
             background-color: rgba(192, 192, 192, 0.9) !important;
             border-left: 5px solid #0066ff;
             border-radius: 10px;
-        }}
-        
-        /* Radio buttons */
-        .stRadio > label {{
-            color: #8b0000 !important;
-            font-weight: 600;
+            color: #000000 !important;
         }}
         
         /* Mensajes de voz */
         .mensaje-voz {{
             background: linear-gradient(135deg, #4169e1, #1e90ff);
-            color: white;
+            color: white !important;
             padding: 1rem;
             border-radius: 15px;
             margin: 1rem 0;
             border-left: 5px solid #ffd700;
             box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+        }}
+        
+        .mensaje-voz strong {{
+            color: white !important;
         }}
         
         /* Footer */
@@ -166,7 +177,7 @@ def aplicar_estilos():
             background: linear-gradient(135deg, #c0c0c0, #808080);
             border-radius: 15px;
             margin-top: 3rem;
-            color: #000;
+            color: #000000 !important;
             font-weight: 600;
         }}
         
@@ -182,8 +193,40 @@ def aplicar_estilos():
             z-index: 1000;
         }}
         
-        /* Imágenes de fondo secciones */
-        .seccion-fondo {{
+        /* Fondos de secciones con imágenes - TRANSPARENCIA 80% */
+        .seccion-medicinas {{
+            background-image: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)),
+                              url('{CIUDAD_URL}');
+            background-size: cover;
+            background-position: center;
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 1rem 0;
+        }}
+        
+        .seccion-examenes {{
+            background-image: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)),
+                              url('{CIUDAD_URL}');
+            background-size: cover;
+            background-position: center;
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 1rem 0;
+        }}
+        
+        .seccion-citas {{
+            background-image: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)),
+                              url('{ABUELO_URL}');
+            background-size: cover;
+            background-position: center;
+            padding: 2rem;
+            border-radius: 15px;
+            margin: 1rem 0;
+        }}
+        
+        .seccion-programadas {{
+            background-image: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)),
+                              url('{ABUELO_URL}');
             background-size: cover;
             background-position: center;
             padding: 2rem;
@@ -214,7 +257,7 @@ def sumar_dias_habiles(fecha_inicio, dias_a_sumar, festivos):
     return fecha_actual
 
 # ======================================================================
-# 3. FUNCIONES DE VOZ Y NOTIFICACIONES
+# 3. FUNCIONES DE VOZ Y NOTIFICACIONES (CORREGIDO)
 # ======================================================================
 
 def generar_audio(texto, filename="audio_temp.mp3"):
@@ -228,13 +271,25 @@ def generar_audio(texto, filename="audio_temp.mp3"):
         return None
 
 def mostrar_mensaje_voz(texto):
-    """Muestra mensaje y genera audio reproducible"""
+    """Muestra mensaje y genera audio reproducible AUTOMÁTICO"""
     st.markdown(f'<div class="mensaje-voz">🔊 <strong>Asistente:</strong> {texto}</div>', unsafe_allow_html=True)
     
     audio_file = generar_audio(texto)
     if audio_file and os.path.exists(audio_file):
         with open(audio_file, 'rb') as f:
             audio_bytes = f.read()
+        
+        # Convertir a base64 para autoplay HTML5
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        
+        # HTML5 audio con autoplay (oculto)
+        st.markdown(f"""
+            <audio autoplay style="display:none;">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        """, unsafe_allow_html=True)
+        
+        # Mostrar reproductor manual también (por si el navegador bloquea autoplay)
         st.audio(audio_bytes, format='audio/mp3')
 
 def enviar_notificaciones(mensaje_texto, nombre_paciente):
@@ -451,7 +506,7 @@ def main():
         st.markdown(f"""
         <div style='text-align: center;'>
             <img src='{AVATAR_URL}' width='150' style='border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);'>
-            <h1>🏥 </h1>
+            <h1>🏥 ASISTENTE DE SALUD</h1>
             <p style='color: #8b0000; font-size: 18px; font-weight: 600;'>
                 Sistema Inteligente de Recordatorios Médicos
             </p>
@@ -470,7 +525,8 @@ def main():
                 st.success("✅ Conexión establecida correctamente")
                 time.sleep(1)
         
-        mostrar_mensaje_voz("Bienvenido al asistente de agendamiento y recordatorio médico. Realizaremos preguntas para calcular o registrar sus fechas médicas importantes.")
+        mostrar_mensaje_voz("Bienvenido al gestor de salud. Realizaremos preguntas para calcular o registrar sus fechas médicas importantes.")
+        time.sleep(1.5)  # PAUSA como en código Python
         
         st.session_state.paso = 'solicitar_nombre'
         st.rerun()
@@ -504,6 +560,8 @@ def main():
                 col1, col2, col3 = st.columns([1, 1, 1])
                 with col1:
                     if st.button("✅ Sí, mostrar historial", use_container_width=True):
+                        msg_resumen = f"He encontrado sus últimos registros, {st.session_state.nombre_paciente}. Aquí tiene un resumen:"
+                        mostrar_mensaje_voz(msg_resumen)
                         st.markdown("### 📊 HISTORIAL RECIENTE (Últimos 4)")
                         for i, f in enumerate(historial, 1):
                             detalles = []
@@ -556,11 +614,11 @@ def main():
     # Avatar flotante
     st.markdown(f'<img src="{AVATAR_URL}" class="avatar-esquina">', unsafe_allow_html=True)
     
-    # Footer
+    # Footer (CORREGIDO - cierre de etiqueta)
     st.markdown(f"""
     <div class='footer'>
         <strong>🏥 ASISTENTE DE AGENDAMIENTO Y RECORDATORIO DE RETIRO DE MEDICINAS, 
-    EXÁMENES CLÍNICOS Y CONSULTAS MÉDICAS.>
+        EXÁMENES CLÍNICOS Y CONSULTAS MÉDICAS.</strong><br>
         Sistema Inteligente de Recordatorios Médicos<br>
         Desarrollado por <strong>Mauricio Niño Gamboa</strong><br>
         © 2026 - Todos los derechos reservados<br>
@@ -607,10 +665,12 @@ def mostrar_menu_principal():
             st.rerun()
 
 # ======================================================================
-# 9. FLUJO DE MEDICINAS
+# 9. FLUJO DE MEDICINAS (CON FONDO CIUDAD)
 # ======================================================================
 
 def flujo_medicinas_streamlit():
+    st.markdown('<div class="seccion-medicinas">', unsafe_allow_html=True)
+    
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -620,7 +680,7 @@ def flujo_medicinas_streamlit():
         st.rerun()
     
     elif st.session_state.subfase == 1:
-        mostrar_mensaje_voz("¿Es para Medicina General?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es para Medicina General?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="med_gral_si"):
@@ -633,7 +693,7 @@ def flujo_medicinas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 2:
-        mostrar_mensaje_voz("¿Es para Especialista?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es para Especialista?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="med_esp_si"):
@@ -645,7 +705,7 @@ def flujo_medicinas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 3:
-        mostrar_mensaje_voz("Por favor, especifique cuál es la especialidad para el retiro de medicina")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, especifique cuál es la especialidad para el retiro de medicina")
         especialidad = st.text_input("**Especialidad:**", key="med_especialidad")
         if st.button("✅ Confirmar", key="med_esp_conf"):
             if especialidad.strip():
@@ -656,7 +716,7 @@ def flujo_medicinas_streamlit():
                 st.warning("⚠️ Por favor ingrese la especialidad")
     
     elif st.session_state.subfase == 4:
-        mostrar_mensaje_voz("¿Es para Oncología?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es para Oncología?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="med_onco_si"):
@@ -670,7 +730,7 @@ def flujo_medicinas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 5:
-        mostrar_mensaje_voz("Por favor, indíqueme ¿Cuántas entregas le faltan?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, indíqueme ¿Cuántas entregas le faltan?")
         num_entregas = st.number_input("**Número de entregas:**", min_value=1, max_value=12, value=1, key="med_num_entregas")
         if st.button("✅ Confirmar", key="med_num_conf"):
             p['num_entregas'] = int(num_entregas)
@@ -678,7 +738,7 @@ def flujo_medicinas_streamlit():
             st.rerun()
     
     elif st.session_state.subfase == 6:
-        mostrar_mensaje_voz("Por favor, la fecha de su último retiro, dígame el día, el mes y el año.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, la fecha de su último retiro, dígame el día, el mes y el año.")
         fecha = st.text_input("**Fecha último retiro (DD/MM/AAAA):**", key="med_fecha_retiro")
         if st.button("✅ Confirmar", key="med_fecha_conf"):
             if validar_fecha(fecha):
@@ -695,12 +755,16 @@ def flujo_medicinas_streamlit():
         if st.button("▶️ Continuar al resumen", key="med_finalizar"):
             st.session_state.paso = 'mostrar_resumen'
             st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
-# 10. FLUJO DE EXÁMENES
+# 10. FLUJO DE EXÁMENES (CON FONDO CIUDAD)
 # ======================================================================
 
 def flujo_examenes_streamlit():
+    st.markdown('<div class="seccion-examenes">', unsafe_allow_html=True)
+    
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -710,7 +774,7 @@ def flujo_examenes_streamlit():
         st.rerun()
     
     elif st.session_state.subfase == 1:
-        mostrar_mensaje_voz("¿Es examen de Sangre?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es examen de Sangre?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="ex_sangre_si"):
@@ -723,7 +787,7 @@ def flujo_examenes_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 2:
-        mostrar_mensaje_voz("¿Es examen de Rayos X?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es examen de Rayos X?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="ex_rayosx_si"):
@@ -736,7 +800,7 @@ def flujo_examenes_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 3:
-        mostrar_mensaje_voz("¿Es examen de Ultrasonido?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es examen de Ultrasonido?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="ex_ultra_si"):
@@ -749,7 +813,7 @@ def flujo_examenes_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 4:
-        mostrar_mensaje_voz("¿Es examen de Resonancia o Tomografía?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es examen de Resonancia o Tomografía?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="ex_reso_si"):
@@ -763,7 +827,7 @@ def flujo_examenes_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 5:
-        mostrar_mensaje_voz("Dígame, ¿en qué lugar le dieron la orden?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Dígame, ¿en qué lugar le dieron la orden?")
         lugar = st.text_input("**Lugar de la orden:**", key="ex_lugar")
         if st.button("✅ Confirmar", key="ex_lugar_conf"):
             if lugar.strip():
@@ -774,7 +838,7 @@ def flujo_examenes_streamlit():
                 st.warning("⚠️ Por favor ingrese el lugar")
     
     elif st.session_state.subfase == 6:
-        mostrar_mensaje_voz("Por favor, la fecha de la orden, dígame el día, el mes y el año.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, la fecha de la orden, dígame el día, el mes y el año.")
         fecha = st.text_input("**Fecha de la orden (DD/MM/AAAA):**", key="ex_fecha_orden")
         if st.button("✅ Confirmar", key="ex_fecha_conf"):
             if validar_fecha(fecha):
@@ -785,7 +849,7 @@ def flujo_examenes_streamlit():
                 st.error("❌ Fecha inválida. Debe estar entre 31/05/2025 y hoy en formato DD/MM/AAAA")
     
     elif st.session_state.subfase == 7:
-        mostrar_mensaje_voz("Por favor, indíqueme ¿en cuántos días debe entregar los resultados?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, indíqueme ¿en cuántos días debe entregar los resultados?")
         dias = st.number_input("**Días para entregar resultados:**", min_value=1, max_value=365, value=30, key="ex_dias")
         if st.button("✅ Confirmar", key="ex_dias_conf"):
             p['ex_dias_entrega'] = int(dias)
@@ -803,12 +867,16 @@ def flujo_examenes_streamlit():
         if st.button("▶️ Continuar al resumen", key="ex_finalizar"):
             st.session_state.paso = 'mostrar_resumen'
             st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
-# 11. FLUJO DE CITAS
+# 11. FLUJO DE CITAS (CON FONDO ABUELO)
 # ======================================================================
 
 def flujo_citas_streamlit():
+    st.markdown('<div class="seccion-citas">', unsafe_allow_html=True)
+    
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -818,7 +886,7 @@ def flujo_citas_streamlit():
         st.rerun()
     
     elif st.session_state.subfase == 1:
-        mostrar_mensaje_voz("¿Es cita de Medicina General?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es cita de Medicina General?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="cita_gral_si"):
@@ -831,7 +899,7 @@ def flujo_citas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 2:
-        mostrar_mensaje_voz("¿Es cita de Especialista?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es cita de Especialista?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="cita_esp_si"):
@@ -843,7 +911,7 @@ def flujo_citas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 3:
-        mostrar_mensaje_voz("Por favor, especifique para qué especialidad es la cita médica")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, especifique para qué especialidad es la cita médica")
         especialidad = st.text_input("**Especialidad:**", key="cita_especialidad")
         if st.button("✅ Confirmar", key="cita_esp_conf"):
             if especialidad.strip():
@@ -854,7 +922,7 @@ def flujo_citas_streamlit():
                 st.warning("⚠️ Por favor ingrese la especialidad")
     
     elif st.session_state.subfase == 4:
-        mostrar_mensaje_voz("¿Es cita de Oncología?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es cita de Oncología?")
         col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("✅ Sí", key="cita_onco_si"):
@@ -873,7 +941,7 @@ def flujo_citas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 5:
-        mostrar_mensaje_voz("¿En qué lugar es la cita?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}¿En qué lugar es la cita?")
         lugar = st.text_input("**Lugar de la cita:**", key="cita_lugar")
         if st.button("✅ Confirmar", key="cita_lugar_conf"):
             if lugar.strip():
@@ -884,7 +952,7 @@ def flujo_citas_streamlit():
                 st.warning("⚠️ Por favor ingrese el lugar")
     
     elif st.session_state.subfase == 6:
-        mostrar_mensaje_voz("¿Es primera vez de la cita?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es primera vez de la cita?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí, primera vez", key="cita_primera_si"):
@@ -899,9 +967,9 @@ def flujo_citas_streamlit():
     
     elif st.session_state.subfase == 7:
         if st.session_state.valor_temporal:
-            mostrar_mensaje_voz("Por favor, la fecha de la orden de la cita, dígame el día, el mes y el año.")
+            mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, la fecha de la orden de la cita, dígame el día, el mes y el año.")
         else:
-            mostrar_mensaje_voz("Por favor, la fecha de su última cita, dígame el día, el mes y el año.")
+            mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, la fecha de su última cita, dígame el día, el mes y el año.")
         
         fecha = st.text_input("**Fecha (DD/MM/AAAA):**", key="cita_fecha_ult")
         if st.button("✅ Confirmar", key="cita_fecha_conf"):
@@ -913,7 +981,7 @@ def flujo_citas_streamlit():
                 st.error("❌ Fecha inválida. Debe estar entre 31/05/2025 y hoy en formato DD/MM/AAAA")
     
     elif st.session_state.subfase == 8:
-        mostrar_mensaje_voz("¿Tiene usted un control por esa cita?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Tiene usted un control por esa cita?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="cita_control_si"):
@@ -926,7 +994,7 @@ def flujo_citas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 9:
-        mostrar_mensaje_voz("Por favor, indíqueme ¿dentro de cuántos días es el control?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, indíqueme ¿dentro de cuántos días es el control?")
         dias = st.number_input("**Días para control:**", min_value=1, max_value=365, value=30, key="cita_dias_control")
         if st.button("✅ Confirmar", key="cita_dias_conf"):
             p['dias_control'] = int(dias)
@@ -944,6 +1012,8 @@ def flujo_citas_streamlit():
         if st.button("▶️ Continuar al resumen", key="cita_finalizar"):
             st.session_state.paso = 'mostrar_resumen'
             st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
 # 12. FLUJO VARIAS OPCIONES
@@ -951,7 +1021,7 @@ def flujo_citas_streamlit():
 
 def flujo_varias_streamlit():
     if st.session_state.subfase == 0:
-        mostrar_mensaje_voz("¿Necesita hacer retiro de medicina?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Necesita hacer retiro de medicina?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="varias_med_si"):
@@ -972,7 +1042,7 @@ def flujo_varias_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 10:
-        mostrar_mensaje_voz("¿Necesita hacerse exámenes médicos?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Necesita hacerse exámenes médicos?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="varias_ex_si"):
@@ -993,7 +1063,7 @@ def flujo_varias_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 20:
-        mostrar_mensaje_voz("¿Necesita programar una cita médica?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Necesita programar una cita médica?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí", key="varias_cita_si"):
@@ -1013,10 +1083,12 @@ def flujo_varias_streamlit():
                 st.rerun()
 
 # ======================================================================
-# 13. FLUJO FECHAS PROGRAMADAS (OPCIÓN 5)
+# 13. FLUJO FECHAS PROGRAMADAS (OPCIÓN 5) - CON FONDO ABUELO
 # ======================================================================
 
 def flujo_fechas_programadas_streamlit():
+    st.markdown('<div class="seccion-programadas">', unsafe_allow_html=True)
+    
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -1026,7 +1098,7 @@ def flujo_fechas_programadas_streamlit():
         st.rerun()
     
     elif st.session_state.subfase == 1:
-        mostrar_mensaje_voz("Tiene usted una cita programada con fecha definida para algún examen médico, por favor, confirme sí o no")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Tiene usted una cita programada con fecha definida para algún examen médico, por favor, confirme sí o no")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí, examen médico", key="prog_examen_si"):
@@ -1039,7 +1111,7 @@ def flujo_fechas_programadas_streamlit():
                 st.rerun()
     
     elif st.session_state.subfase == 2:
-        mostrar_mensaje_voz("¿Es examen de Sangre?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es examen de Sangre?")
         opciones = ["Sangre", "Rayos X", "Ultrasonido", "Resonancia o Tomografía", "Otro"]
         seleccion = st.radio("**Tipo de examen:**", opciones, key="prog_tipo_ex")
         if st.button("✅ Confirmar", key="prog_tipo_ex_conf"):
@@ -1051,7 +1123,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
     
     elif st.session_state.subfase == 3:
-        mostrar_mensaje_voz("Por favor, especifique el tipo de examen")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, especifique el tipo de examen")
         tipo = st.text_input("**Tipo de examen:**", key="prog_tipo_otro")
         if st.button("✅ Confirmar", key="prog_tipo_otro_conf"):
             if tipo.strip():
@@ -1062,7 +1134,7 @@ def flujo_fechas_programadas_streamlit():
                 st.warning("⚠️ Por favor ingrese el tipo")
     
     elif st.session_state.subfase == 4:
-        mostrar_mensaje_voz("Indique el sitio a realizarse el examen médico")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Indique el sitio a realizarse el examen médico")
         lugar = st.text_input("**Lugar:**", key="prog_lugar_ex")
         if st.button("✅ Confirmar", key="prog_lugar_ex_conf"):
             if lugar.strip():
@@ -1073,7 +1145,7 @@ def flujo_fechas_programadas_streamlit():
                 st.warning("⚠️ Por favor ingrese el lugar")
     
     elif st.session_state.subfase == 5:
-        mostrar_mensaje_voz("Por favor, fecha a realizarse, dígame el día, el mes y el año.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, fecha a realizarse, dígame el día, el mes y el año.")
         fecha = st.text_input("**Fecha (DD/MM/AAAA):**", key="prog_fecha_ex")
         if st.button("✅ Confirmar", key="prog_fecha_ex_conf"):
             if validar_fecha(fecha, futura=True):
@@ -1084,7 +1156,7 @@ def flujo_fechas_programadas_streamlit():
                 st.error("❌ Fecha inválida. Debe ser desde 31/05/2025 en adelante en formato DD/MM/AAAA")
     
     elif st.session_state.subfase == 6:
-        mostrar_mensaje_voz("Indique la hora de su cita, formato 24 horas, ejemplo 14 y 30")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Indique la hora de su cita, formato 24 horas, ejemplo 14 y 30")
         hora = st.text_input("**Hora (HH:MM):**", placeholder="14:30", key="prog_hora_ex")
         if st.button("✅ Confirmar", key="prog_hora_ex_conf"):
             if validar_hora(hora):
@@ -1093,9 +1165,13 @@ def flujo_fechas_programadas_streamlit():
                 st.rerun()
             else:
                 st.error("❌ Hora inválida. Use formato HH:MM (ejemplo: 14:30)")
-    
+
+# ======================================================================
+# CONTINUACIÓN DE FLUJO FECHAS PROGRAMADAS - Desde subfase 10
+# ======================================================================
+
     elif st.session_state.subfase == 10:
-        mostrar_mensaje_voz("Tiene una cita programada con fecha definida para alguna consulta con un médico, por favor, confirme sí o no")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Tiene una cita programada con fecha definida para alguna consulta con un médico, por favor, confirme sí o no")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Sí, cita médica", key="prog_cita_si"):
@@ -1109,7 +1185,7 @@ def flujo_fechas_programadas_streamlit():
                 st.stop()
     
     elif st.session_state.subfase == 11:
-        mostrar_mensaje_voz("¿Es cita de Medicina General?")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es cita de Medicina General?")
         opciones = ["Medicina General", "Especialista", "Oncología", "Odontología", "Otra"]
         seleccion = st.radio("**Tipo de cita:**", opciones, key="prog_tipo_cita")
         if st.button("✅ Confirmar", key="prog_tipo_cita_conf"):
@@ -1123,9 +1199,9 @@ def flujo_fechas_programadas_streamlit():
     
     elif st.session_state.subfase == 12:
         if st.session_state.valor_temporal == "Especialista":
-            mostrar_mensaje_voz("Por favor, especifique la especialidad")
+            mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, especifique la especialidad")
         else:
-            mostrar_mensaje_voz("Por favor, especifique el área o especialidad")
+            mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, especifique el área o especialidad")
         
         tipo = st.text_input("**Especialidad:**", key="prog_especialidad_cita")
         if st.button("✅ Confirmar", key="prog_esp_cita_conf"):
@@ -1137,7 +1213,7 @@ def flujo_fechas_programadas_streamlit():
                 st.warning("⚠️ Por favor ingrese la especialidad")
     
     elif st.session_state.subfase == 13:
-        mostrar_mensaje_voz("Indique el sitio a realizarse la cita médica")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Indique el sitio a realizarse la cita médica")
         lugar = st.text_input("**Lugar:**", key="prog_lugar_cita")
         if st.button("✅ Confirmar", key="prog_lugar_cita_conf"):
             if lugar.strip():
@@ -1148,7 +1224,7 @@ def flujo_fechas_programadas_streamlit():
                 st.warning("⚠️ Por favor ingrese el lugar")
     
     elif st.session_state.subfase == 14:
-        mostrar_mensaje_voz("Por favor, fecha a realizarse, dígame el día, el mes y el año.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, fecha a realizarse, dígame el día, el mes y el año.")
         fecha = st.text_input("**Fecha (DD/MM/AAAA):**", key="prog_fecha_cita")
         if st.button("✅ Confirmar", key="prog_fecha_cita_conf"):
             if validar_fecha(fecha, futura=True):
@@ -1159,7 +1235,7 @@ def flujo_fechas_programadas_streamlit():
                 st.error("❌ Fecha inválida. Debe ser desde 31/05/2025 en adelante en formato DD/MM/AAAA")
     
     elif st.session_state.subfase == 15:
-        mostrar_mensaje_voz("Indique la hora de su cita, formato 24 horas, ejemplo 14 y 30")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Indique la hora de su cita, formato 24 horas, ejemplo 14 y 30")
         hora = st.text_input("**Hora (HH:MM):**", placeholder="14:30", key="prog_hora_cita")
         if st.button("✅ Confirmar", key="prog_hora_cita_conf"):
             if validar_hora(hora):
@@ -1170,13 +1246,13 @@ def flujo_fechas_programadas_streamlit():
                 st.error("❌ Hora inválida. Use formato HH:MM (ejemplo: 14:30)")
     
     elif st.session_state.subfase == 99:
-        # Envío de notificación (solo para opción 5)
+        # ENVÍO DE NOTIFICACIÓN INMEDIATA (solo para opción 5)
         notificacion_msg = f"Cita Programada: {p['prog_categoria']} ({p['prog_tipo']}) en {p['prog_lugar']} el {p['prog_fecha_str']} a las {p['prog_hora']}."
         
         st.success("✅ Información guardada correctamente")
         st.info(notificacion_msg)
         
-        # Cronograma de notificaciones (solo informativo en pantalla)
+        # CRONOGRAMA DE NOTIFICACIONES (solo informativo en pantalla)
         fecha_prog = datetime.strptime(p['prog_fecha_str'], "%d/%m/%Y")
         hoy = datetime.now(tz_co).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
         dias_diff = (fecha_prog - hoy).days
@@ -1189,12 +1265,14 @@ def flujo_fechas_programadas_streamlit():
         
         mostrar_mensaje_voz("Se han programado las notificaciones para su cita confirmada.")
         
-        # Envío físico de notificación
+        # ENVÍO FÍSICO DE NOTIFICACIÓN INMEDIATA
         enviar_notificaciones(notificacion_msg, p['paciente'])
         
         if st.button("▶️ Continuar al resumen", key="prog_finalizar"):
             st.session_state.paso = 'mostrar_resumen'
             st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
 # 14. MOSTRAR RESUMEN FINAL
@@ -1211,41 +1289,49 @@ def mostrar_resumen_final():
         msg = f"Su próximo retiro de medicina ({p.get('med_tipo', '')}) es el **{p['prox_retiro_dt'].strftime('%d/%m/%Y')}**"
         st.success(f"💊 {msg}")
         mostrar_mensaje_voz(msg)
+        time.sleep(6)  # Duración del audio como en código Python
         resumen_items.append(msg)
     
     if "prox_examen_dt" in p:
         msg = f"Su examen ({p.get('ex_tipo', '')}) debe solicitarse el **{p['prox_examen_dt'].strftime('%d/%m/%Y')}**"
         st.info(f"🔬 {msg}")
         mostrar_mensaje_voz(msg)
+        time.sleep(6)
         resumen_items.append(msg)
     
     if "prox_cita_dt" in p and p["prox_cita_dt"]:
         msg = f"Su cita ({p.get('cita_tipo', '')}) debe solicitarse el **{p['prox_cita_dt'].strftime('%d/%m/%Y')}**"
         st.warning(f"📅 {msg}")
         mostrar_mensaje_voz(msg)
+        time.sleep(6)
         resumen_items.append(msg)
     
-    # Guardar en base de datos
+    # GUARDAR EN BASE DE DATOS
     if guardar_en_db(p):
         st.success("✅ Información guardada en la base de datos")
         
-        # Confirmación de contacto
+        # CONFIRMACIÓN DE CONTACTO (según código Python)
         notif_msg = f"Se ha registrado su solicitud. Recibirá notificaciones en **{EMAIL_RECEIVER}** y Telegram **+{TELEGRAM_CHAT_ID[:2]} {TELEGRAM_CHAT_ID[2:5]} {TELEGRAM_CHAT_ID[5:8]} {TELEGRAM_CHAT_ID[8:]}**"
         st.info(notif_msg)
         mostrar_mensaje_voz(notif_msg)
+        time.sleep(14)  # Duración del audio
     
     st.markdown("---")
     
+    # PREGUNTA SOBRE NUEVO REQUERIMIENTO
+    mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Tiene algún otro requerimiento?")
+    
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔄 Nuevo Requerimiento", use_container_width=True):
+        if st.button("✅ Sí, Nuevo Requerimiento", use_container_width=True):
             st.session_state.paso = 'menu_principal'
             st.session_state.paciente = {"paciente": st.session_state.nombre_paciente}
             st.session_state.subfase = 0
+            st.session_state.contador_interacciones = 0
             st.rerun()
     
     with col2:
-        if st.button("✅ Finalizar Sesión", use_container_width=True):
+        if st.button("❌ No, Finalizar Sesión", use_container_width=True):
             mostrar_mensaje_voz("Muchas gracias por usar nuestro servicio. Que tenga un excelente día.")
             st.balloons()
             time.sleep(3)
@@ -1260,4 +1346,3 @@ def mostrar_resumen_final():
 
 if __name__ == "__main__":
     main()
-
