@@ -165,14 +165,16 @@ if 'intentos' not in st.session_state:
 # --- FUNCIONES DE UTILIDAD ---
 def enviar_notificaciones(mensaje_texto, nombre_paciente):
     """Envía notificaciones vía Telegram y Email con el nombre del paciente al inicio."""
-    mensaje_personalizado = f"PACIENTE: {nombre_paciente}\n{mensaje_texto}"
+    mensaje_personalizado = f"PACIENTE: {nombre_paciente}
+{mensaje_texto}"
     
     # 1. Envío por Telegram
     try:
         url_tg = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {
             'chat_id': TELEGRAM_CHAT_ID,
-            'text': f"🔔 RECORDATORIO SALUD:\n{mensaje_personalizado}",
+            'text': f"🔔 RECORDATORIO SALUD:
+{mensaje_personalizado}",
             'parse_mode': 'Markdown'
         }
         requests.post(url_tg, data=payload, timeout=10)
@@ -590,6 +592,570 @@ elif st.session_state.step == 11:
             st.rerun()
     
     # Sub-paso 3: Fecha último retiro
-    elif st.session_state
-\<Streaming stoppped because the conversation grew too long for this model\>
+    elif st.session_state.med_paso == 3:
+        prompt = "Por favor, la fecha de su último retiro, dígame el día, el mes y el año."
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        fecha_retiro = st.date_input(
+            "Fecha de su último retiro:",
+            min_value=datetime(2025, 5, 31),
+            max_value=datetime.now(),
+            key="med_fecha_retiro"
+        )
+        
+        if st.button("✅ Confirmar Fecha", use_container_width=True):
+            fecha_str = fecha_retiro.strftime("%d/%m/%Y")
+            st.session_state.paciente['fecha_ult_retiro'] = fecha_str
+            fecha_base = datetime.strptime(fecha_str, "%d/%m/%Y")
+            st.session_state.paciente['prox_retiro_dt'] = obtener_dia_habil_anterior(
+                fecha_base + timedelta(days=28), festivos_co
+            )
+            
+            # Verificar si viene desde "Varias"
+            if 'varias_desde_varias' in st.session_state and st.session_state.varias_desde_varias:
+                st.session_state.varias_paso = 2
+                st.session_state.step = 14
+                del st.session_state['varias_desde_varias']
+            else:
+                st.session_state.step = 50
+            
+            # Limpiar estado de medicinas
+            for key in list(st.session_state.keys()):
+                if key.startswith('med_'):
+                    del st.session_state[key]
+            
+            st.rerun()
 
+# --- PASO 12: FLUJO EXÁMENES ---
+elif st.session_state.step == 12:
+    st.markdown("<h2 style='color: #00BFFF;'>🔬 Exámenes Médicos</h2>", unsafe_allow_html=True)
+    
+    mensaje_inicio = "Continuamos gentilmente con sus exámenes médicos."
+    st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{mensaje_inicio}</p></div>", unsafe_allow_html=True)
+    reproducir_audio(mensaje_inicio)
+    
+    if 'ex_paso' not in st.session_state:
+        st.session_state.ex_paso = 0
+    
+    # Sub-paso 0: Tipo de examen
+    if st.session_state.ex_paso == 0:
+        opciones = ["Sangre", "Rayos X", "Ultrasonido", "Resonancia o Tomografía"]
+        
+        st.markdown("<h3 style='color: #FFD700;'>Seleccione el tipo de examen:</h3>", unsafe_allow_html=True)
+        
+        for opt in opciones:
+            pregunta = f"¿Es examen de {opt}?"
+            if st.button(f"✅ {opt}", key=f"ex_{opt}", use_container_width=True):
+                reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+                st.session_state.paciente['ex_tipo'] = opt
+                st.session_state.ex_paso = 1
+                st.rerun()
+        
+        if st.button("🔄 Otro Tipo de Examen", use_container_width=True):
+            reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: ¿Es algún otro tipo de examen?")
+            st.session_state.ex_necesita_especificar = True
+            st.session_state.ex_paso = 0.5
+            st.rerun()
+    
+    # Sub-paso 0.5: Especificar otro tipo
+    elif st.session_state.ex_paso == 0.5:
+        prompt = "Por favor, especifique qué otro tipo de examen médico requiere"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        otro_ex = st.text_input("Especifique el tipo de examen:", key="ex_otro")
+        
+        if st.button("✅ Confirmar", use_container_width=True):
+            if otro_ex.strip():
+                st.session_state.paciente['ex_tipo'] = otro_ex.strip()
+                st.session_state.ex_paso = 1
+                st.rerun()
+    
+    # Sub-paso 1: Lugar de la orden
+    elif st.session_state.ex_paso == 1:
+        prompt = "Dígame, ¿en qué lugar le dieron la orden?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        lugar = st.text_input("el lugar de la orden:", key="ex_lugar")
+        
+        if st.button("✅ Confirmar Lugar", use_container_width=True):
+            if lugar.strip():
+                st.session_state.paciente['ex_lugar'] = lugar.strip()
+                st.session_state.ex_paso = 2
+                st.rerun()
+    
+    # Sub-paso 2: Fecha de la orden
+    elif st.session_state.ex_paso == 2:
+        prompt = "Por favor, la fecha de la orden, dígame el día, el mes y el año."
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        fecha_orden = st.date_input(
+            "la fecha de la orden:",
+            min_value=datetime(2025, 5, 31),
+            key="ex_fecha_orden"
+        )
+        
+        if st.button("✅ Confirmar Fecha", use_container_width=True):
+            st.session_state.paciente['ex_fecha_orden'] = fecha_orden.strftime("%d/%m/%Y")
+            st.session_state.ex_paso = 3
+            st.rerun()
+    
+    # Sub-paso 3: Días de entrega
+    elif st.session_state.ex_paso == 3:
+        prompt = "Por favor, indíqueme ¿en cuántos días debe entregar los resultados?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        dias = st.number_input("¿en cuántos días debe entregar los resultados?", min_value=1, max_value=365, step=1, key="ex_dias")
+        
+        if st.button("✅ Confirmar", use_container_width=True):
+            st.session_state.paciente['ex_dias_entrega'] = int(dias)
+            fecha_orden = datetime.strptime(st.session_state.paciente['ex_fecha_orden'], "%d/%m/%Y")
+            resta = st.session_state.paciente['ex_dias_entrega'] - 32
+            if resta < 0 or resta == 2:
+                st.session_state.paciente['prox_examen_dt'] = sumar_dias_habiles(fecha_orden, 3, festivos_co)
+            else:
+                st.session_state.paciente['prox_examen_dt'] = obtener_dia_habil_anterior(
+                    fecha_orden + timedelta(days=resta), festivos_co
+                )
+            
+            # Verificar si viene desde "Varias"
+            if 'varias_desde_varias' in st.session_state and st.session_state.varias_desde_varias:
+                st.session_state.varias_paso = 4
+                st.session_state.step = 14
+                del st.session_state['varias_desde_varias']
+            else:
+                st.session_state.step = 50
+            
+            # Limpiar estado de exámenes
+            for key in list(st.session_state.keys()):
+                if key.startswith('ex_'):
+                    del st.session_state[key]
+            
+            st.rerun()
+
+# --- PASO 13: FLUJO CITAS ---
+elif st.session_state.step == 13:
+    st.markdown("<h2 style='color: #00BFFF;'>👨‍⚕️ Citas Médicas</h2>", unsafe_allow_html=True)
+    
+    mensaje_inicio = "Pasamos amablemente a sus citas médicas."
+    st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{mensaje_inicio}</p></div>", unsafe_allow_html=True)
+    reproducir_audio(mensaje_inicio)
+    
+    if 'cita_paso' not in st.session_state:
+        st.session_state.cita_paso = 0
+    
+    # Sub-paso 0: Tipo de cita
+    if st.session_state.cita_paso == 0:
+        opciones = ["Medicina General", "Especialista", "Oncología", "Odontología"]
+        
+        st.markdown("<h3 style='color: #FFD700;'>Seleccione el tipo de cita:</h3>", unsafe_allow_html=True)
+        
+        for opt in opciones:
+            pregunta = f"¿Es cita de {opt}?"
+            if st.button(f"✅ {opt}", key=f"cita_{opt}", use_container_width=True):
+                reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+                if opt == "Especialista":
+                    st.session_state.cita_necesita_especificar = True
+                    st.session_state.cita_paso = 0.5
+                else:
+                    st.session_state.paciente['cita_tipo'] = opt
+                    st.session_state.cita_paso = 1
+                st.rerun()
+        
+        if st.button("🔄 Otra Especialidad", use_container_width=True):
+            reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: ¿Es para alguna otra especialidad?")
+            st.session_state.cita_paso = 0.5
+            st.rerun()
+    
+    # Sub-paso 0.5: Especificar especialidad
+    elif st.session_state.cita_paso == 0.5:
+        prompt = "Por favor, especifique para qué especialidad es la cita médica"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        especialidad = st.text_input("Especifique la especialidad:", key="cita_especialidad")
+        
+        if st.button("✅ Confirmar", use_container_width=True):
+            if especialidad.strip():
+                st.session_state.paciente['cita_tipo'] = especialidad.strip()
+                st.session_state.cita_paso = 1
+                st.rerun()
+    
+    # Sub-paso 1: Lugar de la cita
+    elif st.session_state.cita_paso == 1:
+        prompt = "¿En qué lugar es la cita?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        lugar = st.text_input("el lugar de la cita:", key="cita_lugar")
+        
+        if st.button("✅ Confirmar Lugar", use_container_width=True):
+            if lugar.strip():
+                st.session_state.paciente['cita_lugar'] = lugar.strip()
+                st.session_state.cita_paso = 2
+                st.rerun()
+    
+    # Sub-paso 2: Primera vez o no
+    elif st.session_state.cita_paso == 2:
+        pregunta = "¿Es primera vez de la cita?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{pregunta}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ SÍ, PRIMERA VEZ", use_container_width=True):
+                st.session_state.cita_es_primera = True
+                st.session_state.cita_paso = 3
+                st.rerun()
+        with col2:
+            if st.button("❌ NO, YA HE IDO", use_container_width=True):
+                st.session_state.cita_es_primera = False
+                st.session_state.cita_paso = 3
+                st.rerun()
+    
+    # Sub-paso 3: Fecha (orden o última cita)
+    elif st.session_state.cita_paso == 3:
+        if st.session_state.cita_es_primera:
+            prompt = "Por favor, la fecha de la orden de la cita, dígame el día, el mes y el año."
+        else:
+            prompt = "Por favor, la fecha de su última cita, dígame el día, el mes y el año."
+        
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        fecha_cita = st.date_input(
+            "Fecha:",
+            min_value=datetime(2025, 5, 31),
+            max_value=datetime.now(),
+            key="cita_fecha"
+        )
+        
+        if st.button("✅ Confirmar Fecha", use_container_width=True):
+            st.session_state.paciente['cita_fecha_ult'] = fecha_cita.strftime("%d/%m/%Y")
+            st.session_state.cita_paso = 4
+            st.rerun()
+    
+    # Sub-paso 4: Tiene control?
+    elif st.session_state.cita_paso == 4:
+        pregunta = "¿Tiene usted un control por esa cita?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{pregunta}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ SÍ, TENGO CONTROL", use_container_width=True):
+                st.session_state.cita_tiene_control = True
+                st.session_state.cita_paso = 5
+                st.rerun()
+        with col2:
+            if st.button("❌ NO TENGO CONTROL", use_container_width=True):
+                st.session_state.paciente['prox_cita_dt'] = None
+                
+                # Verificar si viene desde "Varias"
+                if 'varias_desde_varias' in st.session_state and st.session_state.varias_desde_varias:
+                    del st.session_state['varias_desde_varias']
+                
+                # Limpiar estado de citas
+                for key in list(st.session_state.keys()):
+                    if key.startswith('cita_'):
+                        del st.session_state[key]
+                
+                st.session_state.step = 50
+                st.rerun()
+    
+    # Sub-paso 5: Días de control
+    elif st.session_state.cita_paso == 5:
+        prompt = "Por favor, indíqueme ¿dentro de cuántos días es el control?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        dias = st.number_input("¿dentro de cuántos días es el control?", min_value=1, max_value=365, step=1, key="cita_dias_control")
+        
+        if st.button("✅ Confirmar", use_container_width=True):
+            st.session_state.paciente['dias_control'] = int(dias)
+            fecha_u = datetime.strptime(st.session_state.paciente['cita_fecha_ult'], "%d/%m/%Y")
+            resta = st.session_state.paciente['dias_control'] - 32
+            if resta < 0 or resta == 2:
+                st.session_state.paciente['prox_cita_dt'] = sumar_dias_habiles(fecha_u, 3, festivos_co)
+            else:
+                st.session_state.paciente['prox_cita_dt'] = obtener_dia_habil_anterior(
+                    fecha_u + timedelta(days=resta), festivos_co
+                )
+            
+            # Verificar si viene desde "Varias"
+            if 'varias_desde_varias' in st.session_state and st.session_state.varias_desde_varias:
+                del st.session_state['varias_desde_varias']
+            
+            # Limpiar estado de citas
+            for key in list(st.session_state.keys()):
+                if key.startswith('cita_'):
+                    del st.session_state[key]
+            
+            st.session_state.step = 50
+            st.rerun()
+
+# --- PASO 14: FLUJO VARIAS ---
+elif st.session_state.step == 14:
+    st.markdown("<h2 style='color: #00BFFF;'>📋 Varias Opciones</h2>", unsafe_allow_html=True)
+    
+    if 'varias_paso' not in st.session_state:
+        st.session_state.varias_paso = 0
+    
+    # Sub-paso 0: Medicina?
+    if st.session_state.varias_paso == 0:
+        pregunta = "¿Necesita hacer retiro de medicina?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{pregunta}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ SÍ", key="varias_med_si", use_container_width=True):
+                st.session_state.varias_necesita_medicina = True
+                st.session_state.varias_paso = 1
+                st.rerun()
+        with col2:
+            if st.button("❌ NO", key="varias_med_no", use_container_width=True):
+                st.session_state.varias_necesita_medicina = False
+                st.session_state.varias_paso = 2
+                st.rerun()
+    
+    # Sub-paso 1: Flujo medicina
+    elif st.session_state.varias_paso == 1:
+        st.session_state.step = 11
+        st.session_state.varias_desde_varias = True
+        st.rerun()
+    
+    # Sub-paso 2: Exámenes?
+    elif st.session_state.varias_paso == 2:
+        pregunta = "¿Necesita hacerse exámenes médicos?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{pregunta}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ SÍ", key="varias_ex_si", use_container_width=True):
+                st.session_state.varias_necesita_examenes = True
+                st.session_state.varias_paso = 3
+                st.rerun()
+        with col2:
+            if st.button("❌ NO", key="varias_ex_no", use_container_width=True):
+                st.session_state.varias_necesita_examenes = False
+                st.session_state.varias_paso = 4
+                st.rerun()
+    
+    # Sub-paso 3: Flujo exámenes
+    elif st.session_state.varias_paso == 3:
+        st.session_state.step = 12
+        st.session_state.varias_desde_varias = True
+        st.rerun()
+    
+    # Sub-paso 4: Citas?
+    elif st.session_state.varias_paso == 4:
+        pregunta = "¿Necesita programar una cita médica?"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{pregunta}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ SÍ", key="varias_cita_si", use_container_width=True):
+                st.session_state.varias_necesita_citas = True
+                st.session_state.varias_paso = 5
+                st.rerun()
+        with col2:
+            if st.button("❌ NO", key="varias_cita_no", use_container_width=True):
+                st.session_state.varias_necesita_citas = False
+                
+                # Limpiar estado de varias
+                for key in list(st.session_state.keys()):
+                    if key.startswith('varias_'):
+                        del st.session_state[key]
+                
+                st.session_state.step = 50
+                st.rerun()
+    
+    # Sub-paso 5: Flujo citas
+    elif st.session_state.varias_paso == 5:
+        st.session_state.step = 13
+        st.session_state.varias_desde_varias = True
+        st.rerun()
+
+# --- PASO 15: FLUJO FECHAS PROGRAMADAS ---
+elif st.session_state.step == 15:
+    st.markdown("<h2 style='color: #00BFFF;'>📅 Fechas Confirmadas</h2>", unsafe_allow_html=True)
+    
+    mensaje_inicio = "Evaluaremos sus citas programadas."
+    st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{mensaje_inicio}</p></div>", unsafe_allow_html=True)
+    reproducir_audio(mensaje_inicio)
+    
+    if 'prog_paso' not in st.session_state:
+        st.session_state.prog_paso = 0
+    
+    # Sub-paso 0: Examen o Cita?
+    if st.session_state.prog_paso == 0:
+        msg_ex = "tiene usted una cita programada con fecha definida para algún exámen médico, por favor, confirme si o no"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{msg_ex}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + msg_ex)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ SÍ, EXAMEN", use_container_width=True):
+                st.session_state.paciente['prog_categoria'] = "Examen Médico"
+                st.session_state.prog_paso = 1
+                st.rerun()
+        with col2:
+            if st.button("❌ NO ES EXAMEN", use_container_width=True):
+                st.session_state.prog_paso = 10
+                st.rerun()
+    
+    # Sub-paso 1-4: Examen programado
+    elif st.session_state.prog_paso == 1:
+        opciones = ["Sangre", "Rayos X", "Ultrasonido", "Resonancia o Tomografía"]
+        st.markdown("<h3 style='color: #FFD700;'>Tipo de examen:</h3>", unsafe_allow_html=True)
+        
+        for opt in opciones:
+            pregunta = f"¿Es examen de {opt}?"
+            if st.button(f"✅ {opt}", key=f"prog_ex_{opt}", use_container_width=True):
+                reproducir_audio(gestionar_nombre() + "Por favor, podría indicarme: " + pregunta)
+                st.session_state.paciente['prog_tipo'] = opt
+                st.session_state.prog_paso = 2
+                st.rerun()
+        
+        if st.button("🔄 Otro", use_container_width=True):
+            st.session_state.prog_paso = 1.5
+            st.rerun()
+    
+    elif st.session_state.prog_paso == 1.5:
+        prompt = "Por favor, especifique qué tipo de examen"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        otro = st.text_input("especificar tipo de examen:", key="prog_ex_otro")
+        
+        if st.button("✅ Confirmar", use_container_width=True):
+            if otro.strip():
+                st.session_state.paciente['prog_tipo'] = otro.strip()
+                st.session_state.prog_paso = 2
+                st.rerun()
+    
+    elif st.session_state.prog_paso == 2:
+        prompt = "Dígame el sitio a realizarse el examen médico"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        lugar = st.text_input("sitio a realizarse el examen médico:", key="prog_lugar")
+        
+        if st.button("✅ Confirmar Lugar", use_container_width=True):
+            if lugar.strip():
+                st.session_state.paciente['prog_lugar'] = lugar.strip()
+                st.session_state.prog_paso = 3
+                st.rerun()
+    
+    elif st.session_state.prog_paso == 3:
+        prompt = "Por favor, fecha a realizarse, dígame el día, el mes y el año."
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        fecha_prog = st.date_input(
+            "fecha a realizarse:",
+            min_value=datetime(2025, 5, 31),
+            key="prog_fecha"
+        )
+        
+        if st.button("✅ Confirmar Fecha", use_container_width=True):
+            st.session_state.paciente['prog_fecha_str'] = fecha_prog.strftime("%d/%m/%Y")
+            st.session_state.prog_paso = 4
+            st.rerun()
+    
+    elif st.session_state.prog_paso == 4:
+        prompt = "Indique la hora de su cita, formato 24 horas, ejemplo 14 y 30"
+        st.markdown(f"<div class='info-box'><p style='color: #90EE90;'>{prompt}</p></div>", unsafe_allow_html=True)
+        reproducir_audio(gestionar_nombre() + prompt)
+        
+        hora = st.time_input("Hora (HH:MM):", key="prog_hora")
+        
+        if st.button("✅ Confirmar Hora", use_container_width=True):
+            st.session_state.paciente['prog_hora'] = hora.strftime("%H:%M")
+            
+            # Guardar en base de datos
+            if guardar_en_db(st.session_state.paciente):
+                mensaje_final = f"Perfecto, {st.session_state.nombre_paciente_global}. Hemos registrado su fecha programada para {st.session_state.paciente.get('prog_fecha_str')} a las {st.session_state.paciente.get('prog_hora')}."
+                st.success(mensaje_final)
+                reproducir_audio(mensaje_final)
+                
+                # Enviar notificaciones
+                mensaje_notif = f"FECHA PROGRAMADA REGISTRADA - Tipo: {st.session_state.paciente.get('prog_categoria', 'N/A')}
+Fecha: {st.session_state.paciente.get('prog_fecha_str', 'N/A')}
+Hora: {st.session_state.paciente.get('prog_hora', 'N/A')}"
+                enviar_notificaciones(mensaje_notif, st.session_state.nombre_paciente_global)
+                
+                # Limpiar estado de programación
+                for key in list(st.session_state.keys()):
+                    if key.startswith('prog_'):
+                        del st.session_state[key]
+                
+                st.session_state.step = 50
+                st.rerun()
+
+# --- PASO 50: RESULTADOS FINALES ---
+elif st.session_state.step == 50:
+    st.markdown(f"<h1 style='text-align: center; color: #00BFFF;'>📋 RESUMEN FINAL</h1>", unsafe_allow_html=True)
+    
+    # Crear resumen
+    resumen_lines = []
+    
+    if 'med_tipo' in st.session_state.paciente and 'prox_retiro_dt' in st.session_state.paciente:
+        resumen_lines.append(f"💊 **Retiro de {st.session_state.paciente['med_tipo']}:** {st.session_state.paciente['prox_retiro_dt'].strftime('%d/%m/%Y')}")
+    
+    if 'ex_tipo' in st.session_state.paciente and 'prox_examen_dt' in st.session_state.paciente:
+        resumen_lines.append(f"🔬 **Examen de {st.session_state.paciente['ex_tipo']}:** {st.session_state.paciente['prox_examen_dt'].strftime('%d/%m/%Y')}")
+    
+    if 'cita_tipo' in st.session_state.paciente:
+        if 'prox_cita_dt' in st.session_state.paciente and st.session_state.paciente['prox_cita_dt']:
+            resumen_lines.append(f"👨‍⚕️ **Cita de {st.session_state.paciente['cita_tipo']}:** {st.session_state.paciente['prox_cita_dt'].strftime('%d/%m/%Y')}")
+        else:
+            resumen_lines.append(f"👨‍⚕️ **Cita de {st.session_state.paciente['cita_tipo']}:** Sin fecha próxima (no tiene control)")
+    
+    if 'prog_categoria' in st.session_state.paciente and 'prog_fecha_str' in st.session_state.paciente:
+        hora = st.session_state.paciente.get('prog_hora', 'N/A')
+        resumen_lines.append(f"📅 **{st.session_state.paciente['prog_categoria']}:** {st.session_state.paciente['prog_fecha_str']} a las {hora}")
+    
+    if resumen_lines:
+        resumen_texto = "
+".join(resumen_lines)
+        st.markdown(f"<div class='info-box'><h3 style='color: #FFD700;'>Resumen de {st.session_state.nombre_paciente_global}:</h3><p style='color: #C0C0C0;'>{resumen_texto}</p></div>", unsafe_allow_html=True)
+        
+        # Generar mensaje de notificación
+        mensaje_notificacion = f"REGISTRO COMPLETADO:
+" + "
+".join([line.replace("**", "") for line in resumen_lines])
+        enviar_notificaciones(mensaje_notificacion, st.session_state.nombre_paciente_global)
+        
+        # Audio de resumen
+        audio_resumen = f"Resumen final para {st.session_state.nombre_paciente_global}. " + ". ".join([line.replace("**", "") for line in resumen_lines])
+        reproducir_audio(audio_resumen)
+    else:
+        st.warning("No se registró ninguna información.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 INICIAR NUEVO REGISTRO", use_container_width=True):
+            reset_app()
+    
+    with col2:
+        if st.button("🏁 FINALIZAR APLICACIÓN", use_container_width=True):
+            st.balloons()
+            mensaje_final = "Gracias por usar el Asistente IA de Salud. ¡Cuide su bienestar!"
+            st.success(mensaje_final)
+            reproducir_audio(mensaje_final)
+            time.sleep(3)
+            st.stop()
+
+# --- PIE DE PÁGINA ---
+st.markdown("""
+<div class="footer">
+    <p>© 2026 Asistente IA de Salud v2.0 | Desarrollado por Alex Mauricio Niño | Contacto: maualexnino@gmail.com | Todos los derechos reservados</p>
+</div>
+""", unsafe_allow_html=True)
