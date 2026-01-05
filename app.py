@@ -4,28 +4,91 @@ import holidays
 import pytz
 import requests
 import smtplib
-from email.mime.text import MIMEText
-from datetime import datetime, timedelta, date
-from gtts import gTTS
-import io
 import time
+import sys
+import os
+import base64
+from email.mime.text import MIMEText
+from gtts import gTTS
+from datetime import datetime, timedelta
 
-# --- 1. CONFIGURACIÓN DE PÁGINA (Debe ser lo primero) ---
-st.set_page_config(
-    page_title="Gestión de Salud - HealthTrack",
-    page_icon="🏥",
-    layout="centered"
-)
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="Gestor de Salud IA", layout="wide", initial_sidebar_state="collapsed")
 
-# ==========================================
-# BLOQUE DE DIAGNÓSTICO (CHIVATOS)
-# ==========================================
+# --- ESTILOS CSS PERSONALIZADOS (Colores y Responsividad) ---
+def local_css():
+    st.markdown(f"""
+    <style>
+    /* Fondo General */
+    .stApp {{
+        background: url("https://i.ibb.co/5xG1Gzvh/background") no-repeat center center fixed;
+        background-size: cover;
+    }}
+    
+    /* Contenedor principal para evitar fondos blancos */
+    .main .block-container {{
+        background-color: rgba(0, 0, 50, 0.8); /* Azul muy oscuro semi-transparente */
+        border-radius: 20px;
+        padding: 20px;
+        color: #D4AF37; /* Dorado */
+    }}
 
-# 1. Mensaje de prueba al inicio para verificar que el script carga
-st.write("1. La aplicación ha iniciado correctamente...")
+    /* Textos y Encabezados */
+    h1, h2, h3, p, span, label {{
+        color: #7DF9FF !important; /* Azul Eléctrico */
+        font-family: 'Arial', sans-serif;
+    }}
 
-# Configuración Base de Datos TiDB (La definimos aquí para probarla inmediatamente)
-CONFIG_DB = {
+    /* Botón REGRESAR (Superior Derecha) */
+    .btn-regresar {{
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background-color: #FFFF00 !important; /* Amarillo Intenso */
+        color: #0000FF !important; /* Letras Azules */
+        border: 2px solid #000000 !important; /* Borde Negro */
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: bold;
+        text-decoration: none;
+        z-index: 9999;
+    }}
+
+    /* Estilos de inputs */
+    .stTextInput>div>div>input, .stSelectbox>div>div>select {{
+        background-color: #C0C0C0 !important; /* Plateado Brillante */
+        color: #800020 !important; /* Vinotinto */
+        font-weight: bold;
+    }}
+
+    /* Pie de página fijo */
+    .footer {{
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #800020; /* Vinotinto */
+        color: #D4AF37; /* Dorado */
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        z-index: 1000;
+    }}
+
+    /* Botones de Streamlit */
+    .stButton>button {{
+        background-color: #D4AF37 !important; /* Dorado */
+        color: #800020 !important; /* Vinotinto */
+        border-radius: 10px;
+        border: 1px solid #C0C0C0;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+local_css()
+
+# --- CONFIGURACIÓN DE CREDENCIALES (IGUAL AL ORIGINAL) ---
+config = {
     'host': 'gateway01.us-east-1.prod.aws.tidbcloud.com',
     'port': 4000,
     'user': '39hpidXc8KL7sEA.root',
@@ -36,523 +99,255 @@ CONFIG_DB = {
     'ssl_ca': '/etc/ssl/certs/ca-certificates.crt'
 }
 
-try:
-    # 2. Mensaje antes de conectar
-    st.write("2. Intentando conectar a la base de datos...")
-    
-    # INTENTO DE CONEXIÓN DE PRUEBA
-    test_conn = mysql.connector.connect(**CONFIG_DB)
-    
-    # 3. Mensaje después de conectar
-    st.write("3. ¡Conexión exitosa!")
-    test_conn.close() # Cerramos la prueba para no dejarla abierta
-
-except Exception as e:
-    st.error(f"Error al conectar: {e}")
-
-# ==========================================
-# FIN DEL BLOQUE DE DIAGNÓSTICO
-# ==========================================
-
-
-# --- ESTILOS ---
-# ESTILOS CORREGIDOS: Letras oscuras sobre fondos claros + Inputs amarillo/azul
-st.markdown("""
-    <style>
-    /* Fondo general */
-    .stApp {
-        background-color: #f4f4f4;
-    }
-    
-    /* TÍTULO CENTRADO EN ESPAÑOL */
-    h1 {
-        color: #001f3f; /* Azul Marino */
-        text-align: center;
-        font-family: 'Arial', sans-serif;
-        border-bottom: 3px solid #FFD700; /* Dorado */
-        padding-bottom: 15px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    h2, h3 {
-        color: #001f3f;
-    }
-
-    /* BARRA LATERAL - Fondo claro, letras oscuras */
-    section[data-testid="stSidebar"] {
-        background-color: #E8F4F8; /* Azul muy claro */
-    }
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3, 
-    section[data-testid="stSidebar"] span, 
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] .stMarkdown {
-        color: #001f3f !important; /* Texto Azul Oscuro */
-    }
-
-    /* BOTONES - Fondo claro, letras oscuras */
-    div.stButton > button {
-        background-color: #FFE680; /* Amarillo claro */
-        color: #001f3f; /* Texto Azul Oscuro */
-        border: 2px solid #C0C0C0;
-        border-radius: 10px;
-        font-weight: bold;
-        width: 100%;
-        transition: 0.3s;
-    }
-    div.stButton > button:hover {
-        background-color: #FFD700;
-        color: #000000;
-        border-color: #FFD700;
-    }
-
-    /* CAMPOS DE ENTRADA - Fondo AMARILLO INTENSO, Letras AZUL INTENSO */
-    div[data-baseweb="input"] > div,
-    input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    input[type="time"],
-    textarea,
-    .stTextInput input,
-    .stNumberInput input,
-    .stDateInput input,
-    .stTimeInput input,
-    .stTextArea textarea {
-        background-color: #FFD700 !important; /* Amarillo intenso */
-        color: #00008B !important; /* Azul intenso */
-        border: 2px solid #001f3f !important;
-        border-radius: 5px;
-        font-weight: 600 !important;
-    }
-    
-    /* Asegurar color de texto en inputs */
-    input::placeholder {
-        color: #4B0082 !important; /* Azul-violeta para placeholders */
-        opacity: 0.8;
-    }
-
-    /* Labels de inputs - oscuros sobre fondo claro */
-    label {
-        color: #001f3f !important;
-        font-weight: 600;
-    }
-
-    /* MENSAJES DE ESTADO */
-    div[data-testid="stNotification"] {
-        border-left: 5px solid #FFD700;
-    }
-    
-    /* Asegurar legibilidad en selectbox y radio */
-    .stSelectbox label,
-    .stRadio label {
-        color: #001f3f !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- 2. OTRAS CREDENCIALES (La DB ya está arriba) ---
-
-# Credenciales de Notificación
 TELEGRAM_TOKEN = '8444851001:AAEZBqfJcgUasPLeu1nsD2xcG0OrkPvrwbM'
-TELEGRAM_CHAT_ID = '1677957851'
 EMAIL_APP_PASSWORD = 'wspb oiqd zriv tqpl'
 EMAIL_SENDER = 'unamauricio2013@gmail.com'
 EMAIL_RECEIVER = 'maualexnino@gmail.com'
+TELEGRAM_CHAT_ID = '1677957851'
 
-# Festivos y Zona Horaria
-festivos_co = holidays.CO(years=[2025, 2026, 2027, 2028, 2029])
+festivos_co = holidays.CO(years=[2026, 2027, 2028, 2029])
 tz_co = pytz.timezone('America/Bogota')
 
-# --- 3. FUNCIONES DE LÓGICA (Cálculos, DB, Voz, Notificaciones) ---
-
-def get_db_connection():
-    try:
-        # Usa la CONFIG_DB que definimos al principio
-        return mysql.connector.connect(**CONFIG_DB)
-    except Exception as e:
-        st.error(f"❌ No se ha podido establecer conexión con la base de datos: {e}")
-        return None
-
-def obtener_dia_habil_anterior(fecha_in):
-    """Lógica exacta del script original para restar días hábiles"""
-    if isinstance(fecha_in, datetime): fecha_in = fecha_in.date()
-    # Mientras sea Domingo (6) o Festivo
-    while fecha_in.weekday() == 6 or fecha_in in festivos_co:
-        fecha_in -= timedelta(days=1)
-    return fecha_in
-
-def sumar_dias_habiles(fecha_inicio, dias_a_sumar):
-    """Lógica exacta del script original para sumar días hábiles"""
-    if isinstance(fecha_inicio, datetime): fecha_inicio = fecha_inicio.date()
-    fecha_actual = fecha_inicio
-    dias_contados = 0
-    while dias_contados < dias_a_sumar:
-        fecha_actual += timedelta(days=1)
-        # Si no es Domingo y no es Festivo
-        if fecha_actual.weekday() != 6 and fecha_actual not in festivos_co:
-            dias_contados += 1
-    return fecha_actual
-
+# --- FUNCIONES DE VOZ (ADAPTADA PARA STREAMLIT) ---
 def hablar(texto):
-    """
-    Genera audio TTS y lo reproduce en el navegador.
-    Controla el estado para no repetir el audio infinitamente en cada rerun.
-    """
-    if 'ultimo_audio' not in st.session_state:
-        st.session_state.ultimo_audio = ""
-    
-    # Solo reproducir si el texto es nuevo para esta interacción
-    if texto != st.session_state.ultimo_audio:
+    if texto:
         try:
             tts = gTTS(text=texto, lang='es', tld='com.co')
-            audio_bytes = io.BytesIO()
-            tts.write_to_fp(audio_bytes)
-            audio_bytes.seek(0)
-            
-            st.session_state.ultimo_audio = texto
-            st.session_state.audio_data = audio_bytes
+            tts.save('audio.mp3')
+            audio_file = open('audio.mp3', 'rb')
+            audio_bytes = audio_file.read()
+            st.audio(audio_bytes, format='audio/mp3', autoplay=True)
+            os.remove('audio.mp3')
         except Exception as e:
-            st.warning(f"Audio no disponible: {e}")
-            
-    # Mostrar reproductor (autoplay intenta reproducir solo)
-    if 'audio_data' in st.session_state and st.session_state.audio_data:
-        st.audio(st.session_state.audio_data, format='audio/mp3', autoplay=True)
+            st.error(f"Error de voz: {e}")
 
-def enviar_notificaciones(mensaje, paciente):
-    """Envía alertas reales por Telegram y Gmail tal como el script original"""
-    mensaje_personalizado = f"PACIENTE: {paciente}\n{mensaje}"
-    
+# --- LÓGICA DE NOTIFICACIONES ---
+def enviar_notificaciones(mensaje_texto, nombre_paciente):
+    mensaje_personalizado = f"PACIENTE: {nombre_paciente}\n{mensaje_texto}"
     # Telegram
     try:
         url_tg = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        requests.post(url_tg, data={
-            'chat_id': TELEGRAM_CHAT_ID,
-            'text': f"🔔 RECORDATORIO SALUD:\n{mensaje_personalizado}",
-             'parse_mode': 'Markdown'
-        }, timeout=10)
-    except Exception as e:
-        st.error(f"Error Telegram: {e}")
-
-    # Gmail
+        payload = {'chat_id': TELEGRAM_CHAT_ID, 'text': f"🔔 RECORDATORIO SALUD:\n{mensaje_personalizado}", 'parse_mode': 'Markdown'}
+        requests.post(url_tg, data=payload, timeout=10)
+    except: pass
+    # Email
     try:
         msg = MIMEText(mensaje_personalizado)
-        msg['Subject'] = f'Recordatorio de Salud - {paciente}'
+        msg['Subject'] = f'Recordatorio de Salud - {nombre_paciente}'
         msg['From'] = EMAIL_SENDER
         msg['To'] = EMAIL_RECEIVER
-
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
             server.login(EMAIL_SENDER, EMAIL_APP_PASSWORD)
             server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
-    except Exception as e:
-        st.error(f"Error Gmail: {e}")
+    except: pass
 
-def guardar_db(datos):
-    """Guarda en TiDB usando la estructura exacta de tabla solicitada"""
-    conn = get_db_connection()
-    if not conn: return False
+# --- FUNCIONES DE FECHAS ---
+def obtener_dia_habil_anterior(fecha, festivos):
+    while fecha.weekday() == 6 or fecha in festivos:
+        fecha -= timedelta(days=1)
+    return fecha
+
+def sumar_dias_habiles(fecha_inicio, dias_a_sumar, festivos):
+    fecha_actual = fecha_inicio
+    dias_contados = 0
+    while dias_contados < dias_a_sumar:
+        fecha_actual += timedelta(days=1)
+        if fecha_actual.weekday() != 6 and fecha_actual not in festivos:
+            dias_contados += 1
+    return fecha_actual
+
+# --- BASE DE DATOS ---
+def verificar_conexion():
     try:
+        conn = mysql.connector.connect(**config)
+        return conn.is_connected()
+    except: return False
+
+def guardar_en_db(p):
+    try:
+        conn = mysql.connector.connect(**config)
         cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS registros_salud (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                paciente VARCHAR(100),
-                fecha_registro DATETIME,
-                med_tipo VARCHAR(100),
-                prox_retiro DATE,
-                ex_tipo VARCHAR(100),
-                prox_examen DATE,
-                cita_tipo VARCHAR(100),
-                prox_cita DATE,
-                prog_categoria VARCHAR(100),
-                prog_fecha DATE,
-                prog_hora VARCHAR(10)
-            )
-        """)
-        
         query = """
             INSERT INTO registros_salud 
             (paciente, fecha_registro, med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha, prog_hora)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        
-        # Preparar valores (manejando Nones donde corresponda)
-        valores = (
-            datos.get("paciente"), 
-            datetime.now(tz_co).replace(tzinfo=None),
-            datos.get("med_tipo"), 
-            datos.get("prox_retiro"),
-            datos.get("ex_tipo"), 
-            datos.get("prox_examen"),
-            datos.get("cita_tipo"), 
-            datos.get("prox_cita"),
-            datos.get("prog_categoria"), 
-            datos.get("prog_fecha"), 
-            datos.get("prog_hora")
+        vals = (
+            p.get('paciente'), datetime.now(tz_co).replace(tzinfo=None),
+            p.get('med_tipo'), p.get('prox_retiro_dt').date() if 'prox_retiro_dt' in p else None,
+            p.get('ex_tipo'), p.get('prox_examen_dt').date() if 'prox_examen_dt' in p else None,
+            p.get('cita_tipo'), p.get('prox_cita_dt').date() if 'prox_cita_dt' in p and p['prox_cita_dt'] else None,
+            p.get('prog_categoria'), 
+            datetime.strptime(p['prog_fecha_str'], "%d/%m/%Y").date() if 'prog_fecha_str' in p else None,
+            p.get('prog_hora')
         )
-        
-        cursor.execute(query, valores)
+        cursor.execute(query, vals)
         conn.commit()
         cursor.close()
         conn.close()
-        return True
-    except Exception as e:
-        st.error(f"❌ Error al guardar en base de datos: {e}")
-        return False
+    except Exception as e: st.error(f"Error DB: {e}")
 
-# --- 4. GESTIÓN DE ESTADO (Session State) ---
-# Usamos esto para simular el flujo "paso a paso" del while loop en consola
-if 'paso' not in st.session_state: st.session_state.paso = 'inicio'
-if 'datos' not in st.session_state: st.session_state.datos = {}
-if 'paciente' not in st.session_state: st.session_state.paciente = ""
-if 'datos_extra' not in st.session_state: st.session_state.datos_extra = {}
+# --- GESTIÓN DE ESTADO (MÁQUINA DE ESTADOS) ---
+if 'step' not in st.session_state:
+    st.session_state.step = 'BIENVENIDA'
+    st.session_state.p = {}
+    st.session_state.contador_interacciones = 0
+    st.session_state.nombre_paciente_global = ""
 
-# --- 5. INTERFAZ DE USUARIO (WIZARD) ---
+def gestionar_nombre():
+    if st.session_state.contador_interacciones % 4 == 0 and st.session_state.nombre_paciente_global:
+        st.session_state.contador_interacciones += 1
+        return f"{st.session_state.nombre_paciente_global}, "
+    st.session_state.contador_interacciones += 1
+    return ""
 
+# --- BOTÓN REGRESAR ---
+st.markdown('<a href="/" class="btn-regresar">CANCELAR Y REGRESAR A LA PÁGINA PRINCIPAL</a>', unsafe_allow_html=True)
+
+# --- AVATAR ---
+st.image("https://i.ibb.co/XxD1CzWx/avatar", width=80)
+
+# --- FLUJO PRINCIPAL ---
 def main():
-    # BARRA LATERAL
-    with st.sidebar:
-        st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=100)
-        st.markdown("## ASISTENTE INTEGRAL DE SALUD")
-        st.markdown("---")
-        if st.session_state.paciente:
-            st.markdown(f"👤 **PACIENTE:**\n\n### {st.session_state.paciente}")
-            st.markdown("---")
-            if st.button("🔄 Cambiar Paciente"):
-                st.session_state.paso = 'inicio'
-                st.session_state.paciente = ""
-                st.session_state.datos = {}
-                st.rerun()
-
-    # --- PANTALLA 1: BIENVENIDA Y NOMBRE ---
-    if st.session_state.paso == 'inicio':
-        st.title("BIENVENIDO AL GESTOR DE SALUD")
-        
-        msg_voz = "Bienvenido al gestor de salud. Realizaremos preguntas para calcular o registrar sus fechas. Para iniciar, por favor permítame saber el nombre del paciente."
-        st.markdown(f"<h4 style='text-align: center; color: #555;'>{msg_voz}</h4>", unsafe_allow_html=True)
-        hablar(msg_voz)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        nombre_input = st.text_input("Ingrese el nombre del paciente:", key="input_nombre").upper()
-        
-        if st.button("CONTINUAR"):
-            if nombre_input:
-                st.session_state.paciente = nombre_input
-                st.session_state.paso = 'menu'
-                st.rerun()
-            else:
-                st.warning("Por favor, escriba un nombre para continuar.")
-
-    # --- PANTALLA 2: MENÚ PRINCIPAL ---
-    elif st.session_state.paso == 'menu':
-        st.title(f"CONSULTA: {st.session_state.paciente}")
-        
-        msg_menu = f"Por favor, {st.session_state.paciente}, indique el motivo de su consulta: retiro medicinas, exámenes médicos, citas médicas o registrar fecha programada."
-        hablar(msg_menu)
-        
-        st.info("Seleccione una opción para avanzar:")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("1. 💊 RETIRO DE MEDICINAS"):
-                st.session_state.paso = 'med_form'
-                st.rerun()
-            if st.button("2. 🧪 EXÁMENES MÉDICOS"):
-                st.session_state.paso = 'ex_form'
-                st.rerun()
-        with col2:
-            if st.button("3. 🩺 CITAS MÉDICAS"):
-                st.session_state.paso = 'cita_form'
-                st.rerun()
-            if st.button("5. 📅 CONFIRMAR FECHA EXACTA"):
-                st.session_state.paso = 'prog_form'
-                st.rerun()
-        
-        st.markdown("---")
-        if st.button("📂 VER HISTORIAL RECIENTE"):
-            st.session_state.paso = 'historial'
+    if st.session_state.step == 'BIENVENIDA':
+        msg = "Bienvenido al gestor de salud. Realizaremos preguntas para calcular o registrar sus fechas..."
+        st.title(msg)
+        hablar(msg)
+        if st.button("Comenzar"):
+            st.session_state.step = 'PEDIR_NOMBRE'
             st.rerun()
 
-    # --- PANTALLA 3: FLUJO MEDICINAS (Opción 1) ---
-    elif st.session_state.paso == 'med_form':
-        st.subheader("💊 Retiro de Medicinas")
-        hablar("Iniciamos cordialmente con el retiro de medicinas. Indique el tipo, entregas y la fecha del último retiro.")
-        
-        with st.form("form_med"):
-            opcion_med = st.radio("¿Es para...?", ["Medicina General", "Especialista", "Oncología", "Otra Especialidad"])
-            especialidad = ""
-            if opcion_med in ["Especialista", "Otra Especialidad"]:
-                especialidad = st.text_input("Por favor, especifique cuál es la especialidad")
-            
-            num_entregas = st.number_input("¿Cuántas entregas le faltan?", min_value=0, step=1)
-            fecha_ult = st.date_input("Indique la fecha de su último retiro", value=date.today())
-            
-            # Botón de envío del formulario
-            if st.form_submit_button("CALCULAR FECHA"):
-                tipo_final = especialidad if especialidad else opcion_med
-                
-                # CÁLCULO EXACTO DEL SCRIPT
-                fecha_base = fecha_ult # date object
-                prox_retiro = obtener_dia_habil_anterior(fecha_base + timedelta(days=28))
-                
-                st.session_state.datos = {
-                    "paciente": st.session_state.paciente,
-                    "med_tipo": tipo_final,
-                    "prox_retiro": prox_retiro
-                }
-                st.session_state.paso = 'confirmar_calculo'
-                st.rerun()
-        
-        if st.button("🔙 Volver al Menú"): st.session_state.paso = 'menu'; st.rerun()
-
-    # --- PANTALLA 4: FLUJO EXÁMENES (Opción 2) ---
-    elif st.session_state.paso == 'ex_form':
-        st.subheader("🧪 Exámenes Médicos")
-        hablar("Continuamos gentilmente con sus exámenes médicos. Por favor indique el tipo y fechas.")
-        
-        with st.form("form_ex"):
-            opcion_ex = st.selectbox("Tipo de Examen", ["Sangre", "Rayos X", "Ultrasonido", "Resonancia o Tomografía", "Otro"])
-            otro_tipo = ""
-            if opcion_ex == "Otro":
-                otro_tipo = st.text_input("Especifique qué otro tipo de examen requiere")
-            
-            lugar = st.text_input("Dígame, ¿en qué lugar le dieron la orden?")
-            fecha_orden = st.date_input("Indique la fecha de la orden", value=date.today())
-            dias_entrega = st.number_input("¿En cuántos días debe entregar los resultados?", min_value=1, value=5)
-            
-            if st.form_submit_button("CALCULAR SOLICITUD"):
-                tipo_final = otro_tipo if otro_tipo else opcion_ex
-                
-                # CÁLCULO EXACTO DEL SCRIPT
-                resta = dias_entrega - 32
-                if resta < 0 or resta == 2:
-                    prox_examen = sumar_dias_habiles(fecha_orden, 3)
-                else:
-                    prox_examen = obtener_dia_habil_anterior(fecha_orden + timedelta(days=resta))
-                
-                st.session_state.datos = {
-                    "paciente": st.session_state.paciente,
-                    "ex_tipo": tipo_final,
-                    "prox_examen": prox_examen
-                }
-                st.session_state.paso = 'confirmar_calculo'
-                st.rerun()
-                
-        if st.button("🔙 Volver al Menú"): st.session_state.paso = 'menu'; st.rerun()
-
-    # --- PANTALLA 5: FLUJO CITAS (Opción 3) ---
-    elif st.session_state.paso == 'cita_form':
-        st.subheader("🩺 Citas Médicas")
-        hablar("Pasamos amablemente a sus citas médicas. Indique especialidad y si es control.")
-        
-        with st.form("form_cit"):
-            opcion_cita = st.selectbox("Especialidad", ["Medicina General", "Especialista", "Oncología", "Odontología", "Otro"])
-            especialidad = ""
-            if opcion_cita in ["Especialista", "Otro"]:
-                especialidad = st.text_input("Especifique para qué especialidad es la cita")
-            
-            lugar = st.text_input("¿En qué lugar es la cita?")
-            es_control = st.radio("¿Tiene usted un control por esa cita?", ["No (Primera Vez / Nueva)", "Sí (Control)"])
-            
-            fecha_label = "Fecha de la orden" if "No" in es_control else "Fecha de su última cita"
-            fecha_ult = st.date_input(fecha_label, value=date.today())
-            
-            dias_control = 0
-            if "Sí" in es_control:
-                dias_control = st.number_input("¿Dentro de cuántos días es el control?", min_value=1, value=30)
-            
-            if st.form_submit_button("CALCULAR"):
-                tipo_final = especialidad if especialidad else opcion_cita
-                prox_cita = None
-                
-                # CÁLCULO EXACTO DEL SCRIPT
-                if "Sí" in es_control:
-                    resta = dias_control - 32
-                    if resta < 0 or resta == 2:
-                        prox_cita = sumar_dias_habiles(fecha_ult, 3)
-                    else:
-                        prox_cita = obtener_dia_habil_anterior(fecha_ult + timedelta(days=resta))
-                
-                st.session_state.datos = {
-                    "paciente": st.session_state.paciente,
-                    "cita_tipo": tipo_final,
-                    "prox_cita": prox_cita
-                }
-                st.session_state.paso = 'confirmar_calculo'
+    elif st.session_state.step == 'PEDIR_NOMBRE':
+        msg = "Para iniciar, por favor permítame saber el nombre del paciente"
+        st.subheader(msg)
+        hablar(msg)
+        nombre = st.text_input("Nombre del Paciente:", key="input_nom")
+        if nombre:
+            if st.button("Confirmar Nombre"):
+                st.session_state.nombre_paciente_global = nombre
+                st.session_state.p['paciente'] = nombre
+                st.session_state.step = 'MENU_PRINCIPAL'
                 st.rerun()
 
-        if st.button("🔙 Volver al Menú"): st.session_state.paso = 'menu'; st.rerun()
-
-    # --- PANTALLA 6: CONFIRMACIÓN DE CÁLCULO (Común para 1, 2, 3) ---
-    elif st.session_state.paso == 'confirmar_calculo':
-        st.subheader("✅ Confirmación de Datos")
-        datos = st.session_state.datos
-        msg_res = ""
-        
-        # Construir mensaje según lo calculado
-        if "med_tipo" in datos:
-            msg_res = f"Su próximo retiro de medicina ({datos['med_tipo']}) es el {datos['prox_retiro'].strftime('%d/%m/%Y')}."
-            st.success(msg_res)
-        elif "ex_tipo" in datos:
-            msg_res = f"Su examen ({datos['ex_tipo']}) debe solicitarse el {datos['prox_examen'].strftime('%d/%m/%Y')}."
-            st.warning(msg_res) # Amarillo/Naranja
-        elif "cita_tipo" in datos:
-            if datos['prox_cita']:
-                msg_res = f"Su cita ({datos['cita_tipo']}) debe solicitarse el {datos['prox_cita'].strftime('%d/%m/%Y')}."
-                st.success(msg_res)
-            else:
-                msg_res = f"Cita de {datos['cita_tipo']} registrada. No se requiere cálculo futuro (No es control)."
-                st.info(msg_res)
-        
-        # Voz de confirmación y pregunta
-        voz_conf = f"{st.session_state.paciente}, {msg_res}. Por favor, confirme si desea guardar estos datos."
-        hablar(voz_conf)
+    elif st.session_state.step == 'MENU_PRINCIPAL':
+        msg_menu = "indique el motivo de su consulta: 1 Retiro medicinas, 2 Exámenes médicos, 3 Citas médicas, 4 Varias o 5 Registrar fecha programada."
+        st.subheader(gestionar_nombre() + msg_menu)
+        hablar(gestionar_nombre() + msg_menu)
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ SÍ, GUARDAR Y NOTIFICAR"):
-                # 1. Guardar en BD
-                if guardar_db(datos):
-                    # 2. Notificación final (sin email inmediato en cálculo, según script original se guarda para proceso batch, pero confirmamos registro)
-                    notif_txt = f"Se ha registrado su solicitud. Recibirá notificaciones en {EMAIL_RECEIVER} y Telegram."
-                    st.success("Información guardada correctamente.")
-                    st.write(notif_txt)
-                    
-                    hablar(f"Información guardada. {notif_txt}. Que tenga un excelente día.")
-                    time.sleep(6) # Dar tiempo al audio
-                    
-                    st.session_state.paso = 'menu'
-                    st.rerun()
+            st.image("https://i.ibb.co/cXktVQbb/img1")
         with col2:
-            if st.button("❌ NO, VOLVER"):
-                st.session_state.paso = 'menu'
+            opcion = st.selectbox("Seleccione una opción", ["", "1. Retiro medicinas", "2. Exámenes médicos", "3. Citas médicas", "4. Varias", "5. Registrar fecha programada"])
+            
+        if opcion != "":
+            confirm_msg = f"Usted eligió {opcion}, ¿es correcto?"
+            st.write(confirm_msg)
+            hablar(confirm_msg)
+            if st.button("Sí, es correcto"):
+                st.session_state.opcion_menu = opcion[0]
+                st.session_state.step = f'FLUJO_{opcion[0]}'
+                st.rerun()
+            if st.button("No, corregir"):
                 st.rerun()
 
-    # --- PANTALLA 7: FECHAS PROGRAMADAS (Opción 5) ---
-    elif st.session_state.paso == 'prog_form':
-        st.subheader("📅 Confirmar Fecha Exacta")
-        hablar("Evaluaremos sus citas programadas. Use esta opción si ya tiene fecha y hora confirmada.")
+    # --- SIMPLIFICACIÓN DE FLUJOS (Mantenimiento de Lógica Original) ---
+    elif st.session_state.step == 'FLUJO_1': # MEDICINAS
+        hablar("Iniciamos cordialmente con el retiro de medicinas.")
+        tipo = st.selectbox("¿Para qué es la medicina?", ["Medicina General", "Especialista", "Oncología", "Otra"])
+        if tipo == "Especialista" or tipo == "Otra":
+            especialidad = st.text_input("Especifique especialidad:")
+            st.session_state.p["med_tipo"] = especialidad
+        else:
+            st.session_state.p["med_tipo"] = tipo
         
-        with st.form("form_prog"):
-            categoria = st.radio("¿Qué tipo de evento es?", ["Examen Médico", "Cita Médica"])
-            
-            tipo_detalle = ""
-            if categoria == "Examen Médico":
-                opcion = st.selectbox("Tipo", ["Sangre", "Rayos X", "Ultrasonido", "Resonancia/Tomografía", "Otro"])
-                tipo_detalle = st.text_input("Especifique (si es Otro)") if opcion == "Otro" else opcion
-            else:
-                opcion = st.selectbox("Especialidad", ["Medicina General", "Especialista", "Oncología", "Odontología", "Otro"])
-                tipo_detalle = st.text_input("Especifique (si es Otro)") if opcion == "Otro" else opcion
-            
-            lugar = st.text_input("Sitio a realizarse")
-            fecha_prog = st.date_input("Fecha programada (DD/MM/AAAA)", min_value=date.today())
-            hora_prog = st.time_input("Hora programada (Formato 24h)")
-            
-# EJECUTOR PRINCIPAL
-if __name__ == "__main__":
-    main()
+        entregas = st.number_input("¿Cuántas entregas le faltan?", min_value=0, step=1)
+        fecha_ult = st.text_input("Fecha último retiro (DD/MM/AAAA):")
+        
+        if st.button("Calcular Fecha de Retiro"):
+            try:
+                fecha_base = datetime.strptime(fecha_ult, "%d/%m/%Y")
+                prox = obtener_dia_habil_anterior(fecha_base + timedelta(days=28), festivos_co)
+                st.session_state.p["prox_retiro_dt"] = prox
+                st.session_state.p["num_entregas"] = entregas
+                st.session_state.step = 'RESUMEN'
+                st.rerun()
+            except: st.error("Formato de fecha inválido")
 
+    elif st.session_state.step == 'FLUJO_2': # EXÁMENES
+        hablar("Continuamos gentilmente con sus exámenes médicos.")
+        tipo = st.selectbox("Tipo de examen:", ["Sangre", "Rayos X", "Ultrasonido", "Resonancia o Tomografía", "Otro"])
+        lugar = st.text_input("¿En qué lugar le dieron la orden?")
+        fecha_o = st.text_input("Fecha de la orden (DD/MM/AAAA):")
+        dias_e = st.number_input("¿En cuántos días debe entregar resultados?", min_value=0)
+        
+        if st.button("Programar Examen"):
+            try:
+                fecha_orden = datetime.strptime(fecha_o, "%d/%m/%Y")
+                resta = dias_e - 32
+                if resta < 0 or resta == 2: prox = sumar_dias_habiles(fecha_orden, 3, festivos_co)
+                else: prox = obtener_dia_habil_anterior(fecha_orden + timedelta(days=resta), festivos_co)
+                st.session_state.p["ex_tipo"] = tipo
+                st.session_state.p["prox_examen_dt"] = prox
+                st.session_state.step = 'RESUMEN'
+                st.rerun()
+            except: st.error("Fecha inválida")
+
+    elif st.session_state.step == 'FLUJO_5': # PROGRAMADA
+        st.image("https://i.ibb.co/fVVvSJFc/img2")
+        hablar("Evaluaremos sus citas programadas.")
+        cat = st.radio("¿Qué desea programar?", ["Examen Médico", "Cita Médica"])
+        tipo = st.text_input("Especifique el área o especialidad:")
+        lugar = st.text_input("Sitio a realizarse:")
+        fecha_p = st.text_input("Fecha (DD/MM/AAAA):")
+        hora_p = st.text_input("Hora (HH:MM):")
+        
+        if st.button("Confirmar Programación"):
+            st.session_state.p.update({
+                "prog_categoria": cat, "prog_tipo": tipo, "prog_lugar": lugar,
+                "prog_fecha_str": fecha_p, "prog_hora": hora_p
+            })
+            # Lógica de notificaciones inmediata para opción 5
+            notificacion_msg = f"Cita Programada: {cat} ({tipo}) en {lugar} el {fecha_p} a las {hora_p}."
+            enviar_notificaciones(notificacion_msg, st.session_state.p['paciente'])
+            st.session_state.step = 'RESUMEN'
+            st.rerun()
+
+    elif st.session_state.step == 'RESUMEN':
+        st.header("--- RESUMEN DE FECHAS ---")
+        p = st.session_state.p
+        if "prox_retiro_dt" in p:
+            msg = f"Su próximo retiro de medicina ({p.get('med_tipo', '')}) es el {p['prox_retiro_dt'].strftime('%d/%m/%Y')}"
+            st.write(msg); hablar(msg)
+        if "prox_examen_dt" in p:
+            msg = f"Su examen ({p.get('ex_tipo', '')}) debe solicitarse el {p['prox_examen_dt'].strftime('%d/%m/%Y')}"
+            st.write(msg); hablar(msg)
+            
+        guardar_en_db(p)
+        
+        notif_f = f"Se ha registrado su solicitud. Recibirá notificaciones en {EMAIL_RECEIVER} y Telegram."
+        st.success(notif_f); hablar(notif_f)
+        
+        if st.button("¿Tiene algún otro requerimiento?"):
+            st.session_state.step = 'MENU_PRINCIPAL'
+            st.rerun()
+        else:
+            if st.button("Finalizar"):
+                hablar("Muchas gracias por usar nuestro servicio. Que tenga un excelente día.")
+                st.session_state.clear()
+                st.rerun()
+
+    # --- PIE DE PÁGINA ---
+    st.markdown(f"""
+    <div class="footer">
+        Asistente IA de agendamiento y recordatorio de retiro de medicinas, exámenes clínicos y consultas médicas.<br>
+        Proyecto creado y desarrollado por Mauricio Niño Gamboa. Enero 2026. Todos los derechos reservados.
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    if verificar_conexion():
+        main()
+    else:
+        st.error("Error crítico: No hay conexión con la base de datos.")
