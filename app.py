@@ -217,8 +217,13 @@ def generar_audio(texto, filename="audio_temp.mp3"):
     except Exception as e:
         return None
 
-def mostrar_mensaje_voz(texto):
-    """Muestra mensaje y fuerza reproducción automática con HTML5"""
+def calcular_espera_voz(texto):
+    """Calcula el tiempo aproximado que tarda en hablar el texto"""
+    # Estimación: ~15 caracteres por segundo + 1.5s base
+    return (len(texto) / 16) + 1.5
+
+def mostrar_mensaje_voz(texto, esperar=True):
+    """Muestra mensaje, fuerza reproducción y espera si es necesario"""
     # Eliminar asteriscos del texto mostrado en pantalla
     texto_limpio = texto.replace("**", "")
     st.markdown(f'<div class="mensaje-voz">🔊 <strong>Asistente:</strong> {texto_limpio}</div>', unsafe_allow_html=True)
@@ -244,6 +249,12 @@ def mostrar_mensaje_voz(texto):
             </script>
         """
         st.components.v1.html(audio_html, height=0)
+        
+        # Simular tiempo de espera del audio para respetar el ritmo de la conversación
+        # Esto evita que el usuario vea el siguiente botón antes de que termine la frase
+        if esperar:
+            duracion = calcular_espera_voz(texto_limpio)
+            time.sleep(duracion)
 
 def enviar_notificaciones(mensaje_texto, nombre_paciente):
     mensaje_personalizado = f"PACIENTE: {nombre_paciente}\n{mensaje_texto}"
@@ -322,6 +333,7 @@ def mostrar_boton_cancelar():
         if st.button("CANCELAR Y REGRESAR", key="btn_cancel_global"):
             st.session_state.paso = 'menu_principal'
             st.session_state.subfase = 0
+            st.session_state.contexto_varias = False # Resetear contexto
             st.rerun()
 
 def mostrar_flecha_volver():
@@ -334,7 +346,13 @@ def mostrar_flecha_volver():
                 st.session_state.subfase -= 1
                 st.rerun()
             else:
-                st.session_state.paso = 'menu_principal'
+                # Si estamos en flujo varias, volver podría implicar regresar al menú de varias
+                if st.session_state.get('contexto_varias', False):
+                     # Lógica simplificada: Volver al inicio del sub-módulo o al menú
+                     st.session_state.paso = 'flujo_varias'
+                     st.session_state.subfase = 0
+                else:
+                    st.session_state.paso = 'menu_principal'
                 st.rerun()
 
 # ======================================================================
@@ -369,6 +387,7 @@ def inicializar_session_state():
     if 'subfase' not in st.session_state: st.session_state.subfase = 0
     if 'valor_temporal' not in st.session_state: st.session_state.valor_temporal = None
     if 'ver_historial' not in st.session_state: st.session_state.ver_historial = False
+    if 'contexto_varias' not in st.session_state: st.session_state.contexto_varias = False
 
 # ======================================================================
 # 6. INTERFAZ PRINCIPAL
@@ -403,7 +422,6 @@ def main():
                 time.sleep(1)
         
         mostrar_mensaje_voz("Bienvenido al gestor de salud. Realizaremos preguntas para calcular o registrar sus fechas médicas importantes.")
-        time.sleep(2)
         st.session_state.paso = 'solicitar_nombre'
         st.rerun()
     
@@ -527,10 +545,14 @@ def mostrar_menu_principal():
     if st.button("Continuar", use_container_width=True):
         opcion = opciones[seleccion]
         st.session_state.subfase = 0
+        st.session_state.contexto_varias = False # Resetear contexto
+        
         if opcion == "1": st.session_state.paso = 'flujo_medicinas'
         elif opcion == "2": st.session_state.paso = 'flujo_examenes'
         elif opcion == "3": st.session_state.paso = 'flujo_citas'
-        elif opcion == "4": st.session_state.paso = 'flujo_varias'
+        elif opcion == "4": 
+            st.session_state.paso = 'flujo_varias'
+            st.session_state.contexto_varias = True # Activar modo varias
         elif opcion == "5": st.session_state.paso = 'flujo_fechas_programadas'
         st.rerun()
 
@@ -544,7 +566,6 @@ def flujo_medicinas_streamlit():
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz("Iniciamos cordialmente con el retiro de medicinas.")
         st.session_state.subfase = 1
-        time.sleep(2)
         st.rerun()
         
     elif st.session_state.subfase == 1:
@@ -620,8 +641,15 @@ def flujo_medicinas_streamlit():
                 st.error("Fecha inválida.")
                 
     elif st.session_state.subfase == 7:
-        st.session_state.paso = 'mostrar_resumen'
-        st.rerun()
+        # FIN DEL FLUJO MEDICINAS
+        # Si estamos en contexto "Varias", volver al controlador de Varias
+        if st.session_state.get('contexto_varias', False):
+             st.session_state.paso = 'flujo_varias'
+             st.session_state.subfase = 10 # Ir a la siguiente sección (Exámenes)
+             st.rerun()
+        else:
+            st.session_state.paso = 'mostrar_resumen'
+            st.rerun()
 
     mostrar_flecha_volver()
 
@@ -635,7 +663,6 @@ def flujo_examenes_streamlit():
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz("Continuamos gentilmente con sus exámenes médicos.")
         st.session_state.subfase = 1
-        time.sleep(2)
         st.rerun()
         
     elif st.session_state.subfase == 1:
@@ -726,8 +753,14 @@ def flujo_examenes_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 8:
-        st.session_state.paso = 'mostrar_resumen'
-        st.rerun()
+        # FIN DEL FLUJO EXAMENES
+        if st.session_state.get('contexto_varias', False):
+             st.session_state.paso = 'flujo_varias'
+             st.session_state.subfase = 20 # Ir a la siguiente sección (Citas)
+             st.rerun()
+        else:
+            st.session_state.paso = 'mostrar_resumen'
+            st.rerun()
 
     mostrar_flecha_volver()
 
@@ -742,7 +775,6 @@ def flujo_citas_streamlit():
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz("Pasamos amablemente a sus citas médicas.")
         st.session_state.subfase = 1
-        time.sleep(2)
         st.rerun()
 
     # 1. Medicina General?
@@ -883,97 +915,68 @@ def flujo_citas_streamlit():
             st.rerun()
 
     elif st.session_state.subfase == 11:
-        st.session_state.paso = 'mostrar_resumen'
-        st.rerun()
+        # FIN DEL FLUJO CITAS
+        if st.session_state.get('contexto_varias', False):
+             # En Varias, Citas es la última, así que va al resumen
+             st.session_state.paso = 'mostrar_resumen'
+             st.rerun()
+        else:
+            st.session_state.paso = 'mostrar_resumen'
+            st.rerun()
 
     mostrar_flecha_volver()
 
 # ======================================================================
-# 12. FLUJO VARIAS
+# 12. FLUJO VARIAS (CONTROLADOR CENTRAL)
 # ======================================================================
 
 def flujo_varias_streamlit():
+    
+    # SUBFASE 0: PREGUNTAR POR MEDICINAS
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Necesita hacer retiro de medicina?")
         c1, c2 = st.columns(2)
         with c1:
             if st.button("Sí", key="v_m_s"):
-                st.session_state.subfase = 1
+                # Ir al flujo de medicinas
+                st.session_state.paso = 'flujo_medicinas'
+                st.session_state.subfase = 0 # Empezar medicinas desde 0
                 st.rerun()
         with c2:
             if st.button("No", key="v_m_n"):
-                st.session_state.subfase = 10
+                st.session_state.subfase = 10 # Saltar a Exámenes
                 st.rerun()
-                
-    elif 1 <= st.session_state.subfase < 10:
-        if 'temp_subfase' not in st.session_state: st.session_state.temp_subfase = 1
-        
-        original = st.session_state.subfase
-        st.session_state.subfase = st.session_state.temp_subfase
-        
-        flujo_medicinas_streamlit()
-        
-        if st.session_state.subfase == 7:
-             st.session_state.subfase = 10
-             del st.session_state.temp_subfase
-             st.rerun()
-        else:
-            st.session_state.temp_subfase = st.session_state.subfase
-            st.session_state.subfase = original
 
+    # SUBFASE 10: PREGUNTAR POR EXÁMENES
     elif st.session_state.subfase == 10:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Necesita hacerse exámenes médicos?")
         c1, c2 = st.columns(2)
         with c1:
             if st.button("Sí", key="v_e_s"):
-                st.session_state.subfase = 11
+                # Ir al flujo de exámenes
+                st.session_state.paso = 'flujo_examenes'
+                st.session_state.subfase = 0 # Empezar exámenes desde 0
                 st.rerun()
         with c2:
             if st.button("No", key="v_e_n"):
-                st.session_state.subfase = 20
+                st.session_state.subfase = 20 # Saltar a Citas
                 st.rerun()
 
-    elif 11 <= st.session_state.subfase < 20:
-        if 'temp_subfase_ex' not in st.session_state: st.session_state.temp_subfase_ex = 1
-        original = st.session_state.subfase
-        st.session_state.subfase = st.session_state.temp_subfase_ex
-        
-        flujo_examenes_streamlit()
-        
-        if st.session_state.subfase == 8:
-            st.session_state.subfase = 20
-            del st.session_state.temp_subfase_ex
-            st.rerun()
-        else:
-            st.session_state.temp_subfase_ex = st.session_state.subfase
-            st.session_state.subfase = original
-
+    # SUBFASE 20: PREGUNTAR POR CITAS
     elif st.session_state.subfase == 20:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Necesita programar una cita médica?")
         c1, c2 = st.columns(2)
         with c1:
             if st.button("Sí", key="v_c_s"):
-                st.session_state.subfase = 21
+                # Ir al flujo de citas
+                st.session_state.paso = 'flujo_citas'
+                st.session_state.subfase = 0 # Empezar citas desde 0
                 st.rerun()
         with c2:
             if st.button("No", key="v_c_n"):
+                # Si no a todo, o terminando, ir al resumen
                 st.session_state.paso = 'mostrar_resumen'
                 st.rerun()
-
-    elif 21 <= st.session_state.subfase < 40:
-        if 'temp_subfase_ci' not in st.session_state: st.session_state.temp_subfase_ci = 1
-        original = st.session_state.subfase
-        st.session_state.subfase = st.session_state.temp_subfase_ci
-        
-        flujo_citas_streamlit()
-        
-        if st.session_state.subfase == 11:
-            st.session_state.paso = 'mostrar_resumen'
-            del st.session_state.temp_subfase_ci
-            st.rerun()
-        else:
-            st.session_state.temp_subfase_ci = st.session_state.subfase
-            st.session_state.subfase = original
 
 # ======================================================================
 # 13. FLUJO PROGRAMADAS
@@ -985,7 +988,6 @@ def flujo_fechas_programadas_streamlit():
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz("Evaluaremos sus citas programadas.")
         st.session_state.subfase = 1
-        time.sleep(2)
         st.rerun()
         
     elif st.session_state.subfase == 1:
@@ -1125,7 +1127,7 @@ def flujo_fechas_programadas_streamlit():
             fa = (fp - timedelta(days=d)).strftime("%d/%m/%Y")
             st.write(f"- Día -{d}: {fa} (10:30am y 07:45pm)")
             
-        mostrar_mensaje_voz("Notificaciones programadas.")
+        mostrar_mensaje_voz("Notificaciones programadas.", esperar=True)
         enviar_notificaciones(msg, p['paciente'])
         
         if st.button("Ir al Resumen"):
@@ -1145,27 +1147,23 @@ def mostrar_resumen_final():
     if "prox_retiro_dt" in p:
         msg = f"Próximo retiro ({p.get('med_tipo')}): {p['prox_retiro_dt'].strftime('%d/%m/%Y')}"
         st.success(msg)
-        mostrar_mensaje_voz(msg)
-        time.sleep(5)
+        mostrar_mensaje_voz(msg, esperar=True)
         
     if "prox_examen_dt" in p:
         msg = f"Solicitar examen ({p.get('ex_tipo')}): {p['prox_examen_dt'].strftime('%d/%m/%Y')}"
         st.info(msg)
-        mostrar_mensaje_voz(msg)
-        time.sleep(5)
+        mostrar_mensaje_voz(msg, esperar=True)
         
     if "prox_cita_dt" in p and p["prox_cita_dt"]:
         msg = f"Solicitar cita ({p.get('cita_tipo')}): {p['prox_cita_dt'].strftime('%d/%m/%Y')}"
         st.warning(msg)
-        mostrar_mensaje_voz(msg)
-        time.sleep(5)
+        mostrar_mensaje_voz(msg, esperar=True)
         
     if guardar_en_db(p):
         st.success("Datos guardados en BD.")
         notif = f"Recibirá notificaciones en {EMAIL_RECEIVER} y Telegram {TELEGRAM_DISPLAY_PHONE}"
         st.info(notif)
-        mostrar_mensaje_voz(notif)
-        time.sleep(10)
+        mostrar_mensaje_voz(notif, esperar=True)
         
     st.markdown("---")
     mostrar_mensaje_voz(f"{gestionar_nombre()}¿Tiene algún otro requerimiento?")
@@ -1177,10 +1175,11 @@ def mostrar_resumen_final():
             nom = st.session_state.nombre_paciente
             st.session_state.paciente = {"paciente": nom}
             st.session_state.subfase = 0
+            st.session_state.contexto_varias = False
             st.rerun()
     with c2:
         if st.button("No, Finalizar"):
-            mostrar_mensaje_voz("Gracias por usar nuestro servicio.")
+            mostrar_mensaje_voz("Gracias por usar nuestro servicio.", esperar=True)
             st.balloons()
             time.sleep(3)
             st.session_state.clear()
@@ -1188,4 +1187,3 @@ def mostrar_resumen_final():
 
 if __name__ == "__main__":
     main()
-
