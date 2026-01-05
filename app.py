@@ -22,7 +22,7 @@ import os
 
 # 1. Configuración de la pestaña
 st.set_page_config(
-    page_title="Asistente Médico - Mauricio Niño G.",
+    page_title="Asistente Médico",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -56,23 +56,33 @@ tz_co = pytz.timezone('America/Bogota')
 AVATAR_URL = "https://i.ibb.co/zVFp4SmV/avatar-Mauricio.png"
 CIUDAD_URL = "https://i.ibb.co/QjpntM88/i6.png"
 ABUELO_URL = "https://i.ibb.co/spG69fPs/i7.png"
-PORTADA_URL = "https://i.ibb.co/jZb8bxGk/i8.jpg" # Nueva URL portada
+PORTADA_URL = "https://i.ibb.co/jZb8bxGk/i8.jpg"
 
 # ======================================================================
 # 1. ESTILOS CSS PERSONALIZADOS
 # ======================================================================
 
 def aplicar_estilos():
-    # Determinamos el fondo según la etapa
-    bg_image = PORTADA_URL if st.session_state.paso in ['bienvenida', 'solicitar_nombre'] else AVATAR_URL
+    # Lógica de fondo: Portada al inicio, Avatar en menú, Imágenes específicas en secciones
+    if st.session_state.paso in ['bienvenida', 'solicitar_nombre']:
+        bg_image = PORTADA_URL
+    elif st.session_state.paso in ['flujo_medicinas', 'flujo_examenes']:
+        bg_image = CIUDAD_URL
+    elif st.session_state.paso in ['flujo_citas', 'flujo_fechas_programadas']:
+        bg_image = ABUELO_URL
+    else:
+        bg_image = AVATAR_URL # Fondo por defecto para menú/resumen
     
+    # Opacidad de la superposición dependiendo de la imagen para legibilidad
+    overlay_opacity = "0.85" if bg_image != PORTADA_URL else "0.3"
+
     st.markdown(f"""
     <style>
         /* Fondo principal dinámico */
         .stApp {{
             background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #004d80 100%);
             background-image: 
-                linear-gradient(135deg, rgba(0, 31, 63, 0.90), rgba(0, 77, 128, 0.90)),
+                linear-gradient(rgba(255, 255, 255, {overlay_opacity}), rgba(255, 255, 255, {overlay_opacity})),
                 url('{bg_image}');
             background-size: cover;
             background-position: center;
@@ -116,16 +126,16 @@ def aplicar_estilos():
             font-size: 16px;
         }}
         
-        /* Botón Cancelar (Superior Derecha) */
-        div[data-testid="column"] .stButton button.boton-cancelar {{
+        /* Botón Cancelar (Estilo Específico) */
+        .boton-cancelar {{
             background-color: #FFD700 !important; /* Amarillo intenso */
             color: #00008B !important; /* Azul intenso */
             border: 2px solid #000000 !important;
-            font-weight: 800;
+            font-weight: 800 !important;
             width: 100%;
         }}
         
-        /* Botón Normal */
+        /* Botones Generales */
         .stButton > button {{
             background: linear-gradient(135deg, #00ff00, #008000);
             color: white !important;
@@ -148,26 +158,31 @@ def aplicar_estilos():
         /* Footer */
         .footer {{
             text-align: center;
-            padding: 2rem 1rem;
+            padding: 1rem;
             background: linear-gradient(135deg, #c0c0c0, #808080);
             border-radius: 15px;
             margin-top: 3rem;
             color: #000000 !important;
             font-weight: 600;
+            font-size: 0.8rem !important; /* Letra más pequeña */
+        }}
+        
+        /* Avatar Header */
+        .avatar-header {{
+            vertical-align: middle;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            border: 2px solid #0066ff;
         }}
 
-        /* Secciones con imágenes de fondo */
-        .seccion-medicinas {{
-            background-image: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('{CIUDAD_URL}');
-            background-size: cover; padding: 2rem; border-radius: 15px;
-        }}
-        .seccion-examenes {{
-            background-image: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('{CIUDAD_URL}');
-            background-size: cover; padding: 2rem; border-radius: 15px;
-        }}
-        .seccion-citas, .seccion-programadas {{
-            background-image: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('{ABUELO_URL}');
-            background-size: cover; padding: 2rem; border-radius: 15px;
+        /* Responsividad */
+        @media (max-width: 640px) {{
+            .main .block-container {{
+                padding: 1rem;
+            }}
+            h1 {{ font-size: 1.5rem !important; }}
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -213,18 +228,18 @@ def generar_audio(texto, filename="audio_temp.mp3"):
 
 def mostrar_mensaje_voz(texto):
     """Muestra mensaje y fuerza reproducción automática con HTML5"""
-    st.markdown(f'<div class="mensaje-voz">🔊 <strong>Asistente:</strong> {texto}</div>', unsafe_allow_html=True)
+    # Eliminar asteriscos del texto mostrado en pantalla
+    texto_limpio = texto.replace("**", "")
+    st.markdown(f'<div class="mensaje-voz">🔊 <strong>Asistente:</strong> {texto_limpio}</div>', unsafe_allow_html=True)
     
-    audio_file = generar_audio(texto)
+    audio_file = generar_audio(texto_limpio)
     if audio_file and os.path.exists(audio_file):
         with open(audio_file, 'rb') as f:
             audio_bytes = f.read()
             audio_base64 = base64.b64encode(audio_bytes).decode()
             
-        # ID único para forzar recarga del elemento de audio
         unique_id = int(time.time() * 1000)
         
-        # HTML5 Audio con autoplay forzado
         audio_html = f"""
             <audio id="audio-{unique_id}" autoplay="true" style="display:none;">
                 <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
@@ -233,7 +248,7 @@ def mostrar_mensaje_voz(texto):
                 var audio = document.getElementById("audio-{unique_id}");
                 audio.volume = 1.0;
                 audio.play().catch(function(error) {{
-                    console.log("Autoplay bloqueado por el navegador: " + error);
+                    console.log("Autoplay bloqueado: " + error);
                 }});
             </script>
         """
@@ -309,10 +324,9 @@ def guardar_en_db(p):
 # ======================================================================
 
 def mostrar_boton_cancelar():
-    """Botón superior derecha: CANCELAR Y REGRESAR"""
+    """Botón superior derecha: CANCELAR Y REGRESAR. Se llama solo en MAIN."""
     col_spacer, col_btn = st.columns([8, 2])
     with col_btn:
-        # Inyectar estilo específico para el botón de cancelar en esta columna
         st.markdown("""
         <style>
         div[data-testid="column"]:nth-of-type(2) button {
@@ -324,7 +338,8 @@ def mostrar_boton_cancelar():
         </style>
         """, unsafe_allow_html=True)
         
-        if st.button("CANCELAR Y REGRESAR", key="btn_cancel_top"):
+        # Key única para evitar DuplicateWidgetID
+        if st.button("CANCELAR Y REGRESAR", key="btn_cancel_global"):
             st.session_state.paso = 'menu_principal'
             st.session_state.subfase = 0
             st.rerun()
@@ -383,19 +398,29 @@ def main():
     inicializar_session_state()
     aplicar_estilos()
     
-    # Header y Créditos
-    st.title("ASISTENTE DE AGENDAMIENTO Y RECORDATORIO DE RETIRO DE MEDICINAS, EXÁMENES CLÍNICOS Y CONSULTAS MÉDICAS.")
+    # Encabezado con Avatar Pequeño
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <img src="{AVATAR_URL}" class="avatar-header">
+        <h1 style="margin: 0; display: inline;">ASISTENTE MÉDICO</h1>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.subheader("Sistema Inteligente de Recordatorios Médicos")
     st.caption("Desarrollado por Mauricio Niño Gamboa. Enero 2026.")
     
-    # Verificación inicial y Bienvenida
+    # Mostrar botón cancelar solo si estamos en un flujo activo
+    if st.session_state.paso in ['flujo_medicinas', 'flujo_examenes', 'flujo_citas', 'flujo_varias', 'flujo_fechas_programadas']:
+        mostrar_boton_cancelar()
+    
+    # Lógica de pasos
     if st.session_state.paso == 'bienvenida':
         with st.spinner('Verificando conexión con el sistema de salud...'):
             if not verificar_conexion():
-                st.error("❌ No se pudo establecer conexión con la base de datos.")
+                st.error("No se pudo establecer conexión con la base de datos.")
                 st.stop()
             else:
-                st.success("✅ Conexión establecida correctamente")
+                st.success("Conexión establecida correctamente")
                 time.sleep(1)
         
         mostrar_mensaje_voz("Bienvenido al gestor de salud. Realizaremos preguntas para calcular o registrar sus fechas médicas importantes.")
@@ -403,29 +428,25 @@ def main():
         st.session_state.paso = 'solicitar_nombre'
         st.rerun()
     
-    # Solicitar Nombre
     elif st.session_state.paso == 'solicitar_nombre':
         mostrar_mensaje_voz("Para iniciar, por favor permítame saber el nombre del paciente")
-        nombre = st.text_input("**Nombre del Paciente:**", key="input_nombre")
+        nombre = st.text_input("Nombre del Paciente:", key="input_nombre")
         
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
-            if st.button("✅ Confirmar Nombre", use_container_width=True):
+            if st.button("Confirmar Nombre", use_container_width=True):
                 if nombre.strip():
                     st.session_state.nombre_paciente = nombre.strip()
                     st.session_state.paciente['paciente'] = nombre.strip()
                     st.session_state.paso = 'consultar_historial'
                     st.rerun()
     
-    # Historial
     elif st.session_state.paso == 'consultar_historial':
         consultar_historial_flow()
     
-    # Menú Principal
     elif st.session_state.paso == 'menu_principal':
         mostrar_menu_principal()
     
-    # Flujos
     elif st.session_state.paso == 'flujo_medicinas':
         flujo_medicinas_streamlit()
     elif st.session_state.paso == 'flujo_examenes':
@@ -439,36 +460,35 @@ def main():
     elif st.session_state.paso == 'mostrar_resumen':
         mostrar_resumen_final()
     
-    # Avatar flotante
-    st.markdown(f'<img src="{AVATAR_URL}" class="avatar-esquina">', unsafe_allow_html=True)
-    
-    # Footer
+    # Footer pequeño
     st.markdown(f"""
     <div class='footer'>
-        <strong>🏥 ASISTENTE DE AGENDAMIENTO Y RECORDATORIO</strong><br>
-        Desarrollado por <strong>Mauricio Niño Gamboa</strong><br>
+        🏥 ASISTENTE DE AGENDAMIENTO Y RECORDATORIO<br>
+        Desarrollado por Mauricio Niño Gamboa<br>
         © 2026 - Todos los derechos reservados<br>
-        <small>Notificaciones: {EMAIL_RECEIVER} | Telegram: {TELEGRAM_DISPLAY_PHONE}</small>
+        Notificaciones: {EMAIL_RECEIVER} | Telegram: {TELEGRAM_DISPLAY_PHONE}
     </div>
     """, unsafe_allow_html=True)
 
 # ======================================================================
-# 7. LÓGICA DEL HISTORIAL (CORREGIDA)
+# 7. LÓGICA DEL HISTORIAL
 # ======================================================================
 
 def consultar_historial_flow():
-    # Consulta una sola vez
     if 'historial_datos' not in st.session_state:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha 
-            FROM registros_salud WHERE paciente LIKE %s COLLATE utf8mb4_general_ci 
-            ORDER BY fecha_registro DESC LIMIT 4
-        """, (st.session_state.nombre_paciente,))
-        st.session_state.historial_datos = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        try:
+            conn = mysql.connector.connect(**DB_CONFIG)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha 
+                FROM registros_salud WHERE paciente LIKE %s COLLATE utf8mb4_general_ci 
+                ORDER BY fecha_registro DESC LIMIT 4
+            """, (st.session_state.nombre_paciente,))
+            st.session_state.historial_datos = cursor.fetchall()
+            cursor.close()
+            conn.close()
+        except:
+            st.session_state.historial_datos = []
 
     historial = st.session_state.historial_datos
     
@@ -477,35 +497,33 @@ def consultar_historial_flow():
             mostrar_mensaje_voz(f"¿Desea visualizar las consultas previas de {st.session_state.nombre_paciente}?")
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✅ Sí, mostrar historial"):
+                if st.button("Sí, mostrar historial"):
                     st.session_state.ver_historial = True
                     st.rerun()
             with col2:
-                if st.button("⏭️ Continuar sin ver"):
+                if st.button("Continuar sin ver"):
                     st.session_state.paso = 'menu_principal'
                     st.rerun()
         else:
-            # MOSTRAR EL HISTORIAL Y QUEDARSE AHÍ
-            st.info(f"📋 Registros previos de **{st.session_state.nombre_paciente}**")
+            st.info(f"Registros previos de {st.session_state.nombre_paciente}")
             msg_resumen = f"He encontrado sus últimos registros, {st.session_state.nombre_paciente}. Aquí tiene un resumen:"
             mostrar_mensaje_voz(msg_resumen)
             
-            st.markdown("### 📊 HISTORIAL RECIENTE")
+            st.markdown("### HISTORIAL RECIENTE")
             for i, f in enumerate(historial, 1):
                 detalles = []
-                if f[1]: detalles.append(f"**Retiro {f[0]}:** {f[1]}")
-                if f[3]: detalles.append(f"**Examen {f[2]}:** {f[3]}")
-                if f[5]: detalles.append(f"**Cita {f[4]}:** {f[5]}")
-                if f[7]: detalles.append(f"**Programado ({f[6]}):** {f[7]}")
+                if f[1]: detalles.append(f"Retiro {f[0]}: {f[1]}")
+                if f[3]: detalles.append(f"Examen {f[2]}: {f[3]}")
+                if f[5]: detalles.append(f"Cita {f[4]}: {f[5]}")
+                if f[7]: detalles.append(f"Programado ({f[6]}): {f[7]}")
                 if detalles:
-                    st.markdown(f"**Registro {i}:** {' | '.join(detalles)}")
+                    st.markdown(f"Registro {i}: {' | '.join(detalles)}")
             
             st.markdown("---")
-            if st.button("▶️ Continuar al Menú"):
+            if st.button("Continuar al Menú"):
                 st.session_state.paso = 'menu_principal'
                 st.rerun()
     else:
-        # Si no hay historial, pasa directo
         st.session_state.paso = 'menu_principal'
         st.rerun()
 
@@ -518,16 +536,16 @@ def mostrar_menu_principal():
     mostrar_mensaje_voz(msg)
     
     opciones = {
-        "1️⃣ Retiro de Medicinas": "1",
-        "2️⃣ Exámenes Médicos": "2",
-        "3️⃣ Citas Médicas": "3",
-        "4️⃣ Varias Opciones": "4",
-        "5️⃣ Registrar Fecha Programada": "5"
+        "1 Retiro de Medicinas": "1",
+        "2 Exámenes Médicos": "2",
+        "3 Citas Médicas": "3",
+        "4 Varias Opciones": "4",
+        "5 Registrar Fecha Programada": "5"
     }
     
-    seleccion = st.radio("**Seleccione una opción:**", list(opciones.keys()))
+    seleccion = st.radio("Seleccione una opción:", list(opciones.keys()))
     
-    if st.button("▶️ Continuar", use_container_width=True):
+    if st.button("Continuar", use_container_width=True):
         opcion = opciones[seleccion]
         st.session_state.subfase = 0
         if opcion == "1": st.session_state.paso = 'flujo_medicinas'
@@ -542,8 +560,6 @@ def mostrar_menu_principal():
 # ======================================================================
 
 def flujo_medicinas_streamlit():
-    mostrar_boton_cancelar()
-    st.markdown('<div class="seccion-medicinas">', unsafe_allow_html=True)
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -556,12 +572,12 @@ def flujo_medicinas_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es para Medicina General?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="mg_si"):
+            if st.button("Sí", key="mg_si"):
                 p['med_tipo'] = "Medicina General"
                 st.session_state.subfase = 5
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="mg_no"):
+            if st.button("No", key="mg_no"):
                 st.session_state.subfase = 2
                 st.rerun()
                 
@@ -569,11 +585,11 @@ def flujo_medicinas_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es para Especialista?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="me_si"):
+            if st.button("Sí", key="me_si"):
                 st.session_state.subfase = 3
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="me_no"):
+            if st.button("No", key="me_no"):
                 st.session_state.subfase = 4
                 st.rerun()
                 
@@ -590,12 +606,12 @@ def flujo_medicinas_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, podría indicarme: ¿Es para Oncología?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="mo_si"):
+            if st.button("Sí", key="mo_si"):
                 p['med_tipo'] = "Oncología"
                 st.session_state.subfase = 5
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="mo_no"):
+            if st.button("No", key="mo_no"):
                 if st.button("Otra Especialidad"):
                     st.session_state.subfase = 3
                     st.rerun()
@@ -629,15 +645,12 @@ def flujo_medicinas_streamlit():
         st.rerun()
 
     mostrar_flecha_volver()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
 # 10. FLUJO EXÁMENES
 # ======================================================================
 
 def flujo_examenes_streamlit():
-    mostrar_boton_cancelar()
-    st.markdown('<div class="seccion-examenes">', unsafe_allow_html=True)
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -650,12 +663,12 @@ def flujo_examenes_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es examen de Sangre?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="ex_s_si"):
+            if st.button("Sí", key="ex_s_si"):
                 p['ex_tipo'] = "Sangre"
                 st.session_state.subfase = 5
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="ex_s_no"):
+            if st.button("No", key="ex_s_no"):
                 st.session_state.subfase = 2
                 st.rerun()
                 
@@ -663,12 +676,12 @@ def flujo_examenes_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es examen de Rayos X?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="ex_r_si"):
+            if st.button("Sí", key="ex_r_si"):
                 p['ex_tipo'] = "Rayos X"
                 st.session_state.subfase = 5
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="ex_r_no"):
+            if st.button("No", key="ex_r_no"):
                 st.session_state.subfase = 3
                 st.rerun()
                 
@@ -676,12 +689,12 @@ def flujo_examenes_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es examen de Ultrasonido?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="ex_u_si"):
+            if st.button("Sí", key="ex_u_si"):
                 p['ex_tipo'] = "Ultrasonido"
                 st.session_state.subfase = 5
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="ex_u_no"):
+            if st.button("No", key="ex_u_no"):
                 st.session_state.subfase = 4
                 st.rerun()
 
@@ -689,12 +702,12 @@ def flujo_examenes_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es Resonancia o Tomografía?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="ex_rt_si"):
+            if st.button("Sí", key="ex_rt_si"):
                 p['ex_tipo'] = "Resonancia o Tomografía"
                 st.session_state.subfase = 5
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="ex_rt_no"):
+            if st.button("No", key="ex_rt_no"):
                 p['ex_tipo'] = "examen no especificado"
                 st.session_state.subfase = 5
                 st.rerun()
@@ -738,102 +751,114 @@ def flujo_examenes_streamlit():
         st.rerun()
 
     mostrar_flecha_volver()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
-# 11. FLUJO CITAS (CORREGIDO)
+# 11. FLUJO CITAS (CORREGIDO LÓGICA SECUENCIAL)
 # ======================================================================
 
 def flujo_citas_streamlit():
-    mostrar_boton_cancelar()
-    st.markdown('<div class="seccion-citas">', unsafe_allow_html=True)
     p = st.session_state.paciente
     
-    # 1. Inicio y Tipo de Cita
+    # 0. Saludo
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz("Pasamos amablemente a sus citas médicas.")
         st.session_state.subfase = 1
         time.sleep(2)
         st.rerun()
 
+    # 1. Medicina General?
     elif st.session_state.subfase == 1:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es cita de Medicina General?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="ci_mg_si"):
+            if st.button("Sí", key="ci_mg_si"):
                 p['cita_tipo'] = "Medicina General"
-                st.session_state.subfase = 5
+                st.session_state.subfase = 6 # Saltar a Lugar
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="ci_mg_no"):
-                st.session_state.subfase = 2
+            if st.button("No", key="ci_mg_no"):
+                st.session_state.subfase = 2 # Ir a Especialista
                 st.rerun()
 
+    # 2. Especialista?
     elif st.session_state.subfase == 2:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es cita de Especialista?")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Sí", key="ci_esp_si"):
-                st.session_state.subfase = 3
+            if st.button("Sí", key="ci_esp_si"):
+                st.session_state.subfase = 3 # Ir a pedir nombre
                 st.rerun()
         with col2:
-            if st.button("❌ No", key="ci_esp_no"):
-                st.session_state.subfase = 4
+            if st.button("No", key="ci_esp_no"):
+                st.session_state.subfase = 4 # Ir a Oncología/Odontología
                 st.rerun()
 
+    # 3. Nombre Especialista
     elif st.session_state.subfase == 3:
         mostrar_mensaje_voz(f"{gestionar_nombre()}Especifique la especialidad")
         esp = st.text_input("Especialidad:", key="ci_esp_in")
         if st.button("Confirmar Especialidad"):
             if esp.strip():
                 p['cita_tipo'] = esp.strip()
-                st.session_state.subfase = 5
+                st.session_state.subfase = 6 # Saltar a Lugar
                 st.rerun()
 
+    # 4. Oncología/Odontología?
     elif st.session_state.subfase == 4:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es Oncología u Odontología?")
         c1, c2, c3 = st.columns(3)
         with c1:
             if st.button("Oncología"):
                 p['cita_tipo'] = "Oncología"
-                st.session_state.subfase = 5
+                st.session_state.subfase = 6 # Saltar a Lugar
                 st.rerun()
         with c2:
             if st.button("Odontología"):
                 p['cita_tipo'] = "Odontología"
-                st.session_state.subfase = 5
+                st.session_state.subfase = 6 # Saltar a Lugar
                 st.rerun()
         with c3:
             if st.button("Otra"):
-                st.session_state.subfase = 3
+                st.session_state.subfase = 5 # Ir a Otra
                 st.rerun()
 
-    # 2. Lugar
+    # 5. Otra Especialidad
     elif st.session_state.subfase == 5:
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Especifique la otra especialidad")
+        otra = st.text_input("Otra especialidad:", key="ci_otra_in")
+        if st.button("Confirmar Otra"):
+            if otra.strip():
+                p['cita_tipo'] = otra.strip()
+                st.session_state.subfase = 6 # Saltar a Lugar
+                st.rerun()
+
+    # 6. Lugar
+    elif st.session_state.subfase == 6:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿En qué lugar es la cita?")
         lug = st.text_input("Lugar:", key="ci_lugar")
         if st.button("Confirmar Lugar"):
             if lug.strip():
                 p['cita_lugar'] = lug.strip()
-                st.session_state.subfase = 6
+                st.session_state.subfase = 7 # Ir a Fecha
                 st.rerun()
 
-    # 3. Primera vez o Control (Fecha)
-    elif st.session_state.subfase == 6:
+    # 7. Primera vez o Control
+    elif st.session_state.subfase == 7:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Es primera vez de la cita?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí, primera vez"):
+            if st.button("Sí, primera vez"):
                 st.session_state.valor_temporal = True # Es primera vez
-                st.session_state.subfase = 7
+                st.session_state.subfase = 8
                 st.rerun()
         with c2:
-            if st.button("❌ No, es control"):
+            if st.button("No, es control"):
                 st.session_state.valor_temporal = False # No es primera vez
-                st.session_state.subfase = 7
+                st.session_state.subfase = 8
                 st.rerun()
 
-    elif st.session_state.subfase == 7:
+    # 8. Fecha
+    elif st.session_state.subfase == 8:
         if st.session_state.valor_temporal:
             msg_f = "Por favor, la fecha de la orden de la cita."
         else:
@@ -844,26 +869,27 @@ def flujo_citas_streamlit():
         if st.button("Confirmar Fecha"):
             if validar_fecha(f_cita):
                 p['cita_fecha_ult'] = f_cita
-                st.session_state.subfase = 8
+                st.session_state.subfase = 9 # Ir a Control
                 st.rerun()
             else:
                 st.error("Fecha inválida.")
 
-    # 4. Control Futuro
-    elif st.session_state.subfase == 8:
+    # 9. Control Futuro?
+    elif st.session_state.subfase == 9:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Tiene usted un control por esa cita?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí"):
-                st.session_state.subfase = 9
+            if st.button("Sí"):
+                st.session_state.subfase = 10 # Ir a Dias
                 st.rerun()
         with c2:
-            if st.button("❌ No"):
+            if st.button("No"):
                 p['prox_cita_dt'] = None
-                st.session_state.subfase = 10
+                st.session_state.subfase = 11 # Fin
                 st.rerun()
 
-    elif st.session_state.subfase == 9:
+    # 10. Dias Control
+    elif st.session_state.subfase == 10:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Dentro de cuántos días es el control?")
         dc = st.number_input("Días:", min_value=1, max_value=365, value=30, key="ci_dias")
         if st.button("Confirmar Días"):
@@ -874,74 +900,57 @@ def flujo_citas_streamlit():
                 p['prox_cita_dt'] = sumar_dias_habiles(fu, 3, festivos_co)
             else:
                 p['prox_cita_dt'] = obtener_dia_habil_anterior(fu + timedelta(days=resta), festivos_co)
-            st.session_state.subfase = 10
+            st.session_state.subfase = 11
             st.rerun()
 
-    elif st.session_state.subfase == 10:
+    elif st.session_state.subfase == 11:
         st.session_state.paso = 'mostrar_resumen'
         st.rerun()
 
     mostrar_flecha_volver()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
 # 12. FLUJO VARIAS
 # ======================================================================
 
 def flujo_varias_streamlit():
-    mostrar_boton_cancelar()
-    # Lógica de sub-flows usando subfase por rangos
-    # 0: Inicio -> Pregunta Med
-    # 1-9: Flujo Med
-    # 10: Pregunta Ex
-    # 11-19: Flujo Ex
-    # 20: Pregunta Cita
-    # 21-29: Flujo Cita
-    
     if st.session_state.subfase == 0:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Necesita hacer retiro de medicina?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí", key="v_m_s"):
+            if st.button("Sí", key="v_m_s"):
                 st.session_state.subfase = 1
                 st.rerun()
         with c2:
-            if st.button("❌ No", key="v_m_n"):
+            if st.button("No", key="v_m_n"):
                 st.session_state.subfase = 10
                 st.rerun()
                 
     elif 1 <= st.session_state.subfase < 10:
-        # Mapear subfase local a subfase del flujo
-        # Necesitamos un estado temporal para el subflujo
         if 'temp_subfase' not in st.session_state: st.session_state.temp_subfase = 1
         
-        # Guardamos el estado original para restaurar
         original = st.session_state.subfase
         st.session_state.subfase = st.session_state.temp_subfase
         
-        # Ejecutamos flujo medicina modificado para retornar
-        # Hack: Usamos el flujo normal pero interceptamos el final
-        flujo_medicinas_streamlit() # Ojo: este usa st.session_state.subfase
+        flujo_medicinas_streamlit()
         
-        # Si el flujo terminó (llegó a 7), volvemos al flujo varias
         if st.session_state.subfase == 7:
-             st.session_state.subfase = 10 # Siguiente pregunta
+             st.session_state.subfase = 10
              del st.session_state.temp_subfase
              st.rerun()
         else:
-            # Si no terminó, guardamos el estado temporal y restauramos el 'macro' estado
             st.session_state.temp_subfase = st.session_state.subfase
-            st.session_state.subfase = original # Restauramos para mantenernos en este bloque
+            st.session_state.subfase = original
 
     elif st.session_state.subfase == 10:
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Necesita hacerse exámenes médicos?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí", key="v_e_s"):
+            if st.button("Sí", key="v_e_s"):
                 st.session_state.subfase = 11
                 st.rerun()
         with c2:
-            if st.button("❌ No", key="v_e_n"):
+            if st.button("No", key="v_e_n"):
                 st.session_state.subfase = 20
                 st.rerun()
 
@@ -964,22 +973,22 @@ def flujo_varias_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Necesita programar una cita médica?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí", key="v_c_s"):
+            if st.button("Sí", key="v_c_s"):
                 st.session_state.subfase = 21
                 st.rerun()
         with c2:
-            if st.button("❌ No", key="v_c_n"):
+            if st.button("No", key="v_c_n"):
                 st.session_state.paso = 'mostrar_resumen'
                 st.rerun()
 
-    elif 21 <= st.session_state.subfase < 30:
+    elif 21 <= st.session_state.subfase < 40:
         if 'temp_subfase_ci' not in st.session_state: st.session_state.temp_subfase_ci = 1
         original = st.session_state.subfase
         st.session_state.subfase = st.session_state.temp_subfase_ci
         
         flujo_citas_streamlit()
         
-        if st.session_state.subfase == 10:
+        if st.session_state.subfase == 11:
             st.session_state.paso = 'mostrar_resumen'
             del st.session_state.temp_subfase_ci
             st.rerun()
@@ -992,8 +1001,6 @@ def flujo_varias_streamlit():
 # ======================================================================
 
 def flujo_fechas_programadas_streamlit():
-    mostrar_boton_cancelar()
-    st.markdown('<div class="seccion-programadas">', unsafe_allow_html=True)
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
@@ -1006,12 +1013,12 @@ def flujo_fechas_programadas_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Tiene cita programada de examen médico?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí", key="fp_e_s"):
+            if st.button("Sí", key="fp_e_s"):
                 p['prog_categoria'] = "Examen Médico"
                 st.session_state.subfase = 2
                 st.rerun()
         with c2:
-            if st.button("❌ No", key="fp_e_n"):
+            if st.button("No", key="fp_e_n"):
                 st.session_state.subfase = 10
                 st.rerun()
 
@@ -1067,12 +1074,12 @@ def flujo_fechas_programadas_streamlit():
         mostrar_mensaje_voz(f"{gestionar_nombre()}¿Tiene cita programada con médico?")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("✅ Sí", key="fp_c_s"):
+            if st.button("Sí", key="fp_c_s"):
                 p['prog_categoria'] = "Cita Médica"
                 st.session_state.subfase = 11
                 st.rerun()
         with c2:
-            if st.button("❌ No", key="fp_c_n"):
+            if st.button("No", key="fp_c_n"):
                 st.info("Sesión finalizada.")
                 st.stop()
 
@@ -1147,7 +1154,6 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
 
     mostrar_flecha_volver()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================================================================
 # 14. RESUMEN FINAL
@@ -1176,7 +1182,7 @@ def mostrar_resumen_final():
         time.sleep(5)
         
     if guardar_en_db(p):
-        st.success("✅ Datos guardados en BD.")
+        st.success("Datos guardados en BD.")
         notif = f"Recibirá notificaciones en {EMAIL_RECEIVER} y Telegram {TELEGRAM_DISPLAY_PHONE}"
         st.info(notif)
         mostrar_mensaje_voz(notif)
@@ -1187,15 +1193,14 @@ def mostrar_resumen_final():
     
     c1, c2 = st.columns(2)
     with c1:
-        if st.button("✅ Sí, Nuevo Requerimiento"):
+        if st.button("Sí, Nuevo Requerimiento"):
             st.session_state.paso = 'menu_principal'
-            # Mantener nombre, limpiar resto
             nom = st.session_state.nombre_paciente
             st.session_state.paciente = {"paciente": nom}
             st.session_state.subfase = 0
             st.rerun()
     with c2:
-        if st.button("❌ No, Finalizar"):
+        if st.button("No, Finalizar"):
             mostrar_mensaje_voz("Gracias por usar nuestro servicio.")
             st.balloons()
             time.sleep(3)
