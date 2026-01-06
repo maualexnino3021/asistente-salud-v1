@@ -414,31 +414,22 @@ def main():
     # Encabezado (ASISTENTE MÉDICO) con foto i7 aumentada 19% (~60px)
     # Título: Sans Serif, Extra Bold (900), Itálica, Dorado Brillante
     # Subtítulo: Copperplate, Plateado Brillante, Alineado con Avatar a la derecha
+    # SE CORRIGIÓ LA INDENTACIÓN AQUÍ PARA EVITAR EL CUADRO AZUL
     st.markdown(f"""
-    <div style="text-align: center; margin-bottom: 20px;">
-        <h1>
-            ASISTENTE MÉDICO 📅 
-            <img src="{ABUELO_URL}" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; border: 2px solid white; box-shadow: 0px 0px 5px rgba(0,0,0,0.5);">
-        </h1>
-        
-        <div style="
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 20px;
-            font-family: 'Copperplate', 'Copperplate Gothic', fantasy; 
-            font-size: 1.51rem; /* 1.4rem original + 8% aprox */
-            color: #C0C0C0; /* Plateado */
-            text-shadow: 0 0 5px #C0C0C0, 1px 1px 2px #000; /* Brillante */
-        ">
-            <div style="text-align: right;">
-                Sistema Inteligente de Recordatorios Médicos<br>
-                Desarrollado por Mauricio Niño Gamboa. Enero 2026.
-            </div>
-            <img src="{AVATAR_MAURICIO}" style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid silver; box-shadow: 0 0 10px silver;">
+<div style="text-align: center; margin-bottom: 20px;">
+    <h1>
+        ASISTENTE MÉDICO 📅 
+        <img src="{ABUELO_URL}" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; border: 2px solid white; box-shadow: 0px 0px 5px rgba(0,0,0,0.5);">
+    </h1>
+    <div style="display: flex; justify-content: center; align-items: center; gap: 20px; font-family: 'Copperplate', 'Copperplate Gothic', fantasy; font-size: 1.51rem; color: #C0C0C0; text-shadow: 0 0 5px #C0C0C0, 1px 1px 2px #000;">
+        <div style="text-align: right;">
+            Sistema Inteligente de Recordatorios Médicos<br>
+            Desarrollado por Mauricio Niño Gamboa. Enero 2026.
         </div>
+        <img src="{AVATAR_MAURICIO}" style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid silver; box-shadow: 0 0 10px silver;">
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
     
     # Mostrar botón cancelar solo si estamos en un flujo activo
     if st.session_state.paso in ['flujo_medicinas', 'flujo_examenes', 'flujo_citas', 'flujo_varias', 'flujo_fechas_programadas']:
