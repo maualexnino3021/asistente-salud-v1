@@ -83,9 +83,6 @@ def aplicar_estilos():
 
     st.markdown(f"""
     <style>
-        /* Importar fuente Gótica de Google Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
-
         /* Fondo principal dinámico */
         .stApp {{
             background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #004d80 100%);
@@ -114,19 +111,20 @@ def aplicar_estilos():
             color: #000000 !important;
         }}
         
-        /* Título principal ASISTENTE MÉDICO (Gótico Dorado) */
+        /* Título principal ASISTENTE MÉDICO (Sans Serif Extra Bold Italic) */
         h1 {{
-            font-family: 'UnifrakturMaguntia', cursive !important;
+            font-family: sans-serif !important;
+            font-weight: 900 !important; /* Extra Bold */
+            font-style: italic !important;
             color: #FFD700 !important; /* Dorado */
             text-align: center;
-            font-weight: 400; /* Las fuentes góticas suelen ser gruesas por defecto */
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px #FFD700; /* Efecto brillante */
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 15px;
-            font-size: 3rem !important;
+            font-size: 3.3rem !important; /* Aumentado 10% (de 3.0 a 3.3) */
         }}
 
         /* Inputs */
@@ -184,7 +182,7 @@ def aplicar_estilos():
         /* Responsividad */
         @media (max-width: 640px) {{
             .main .block-container {{ padding: 1rem; }}
-            h1 {{ font-size: 2rem !important; }}
+            h1 {{ font-size: 2.2rem !important; }}
             .stButton > button {{ font-size: 1rem !important; }}
         }}
     </style>
@@ -413,8 +411,9 @@ def main():
     inicializar_session_state()
     aplicar_estilos()
     
-    # Encabezado (ASISTENTE MÉDICO) con foto i7 aumentada 19% (~60px) y letra gótica dorada brillante
-    # Subtítulo Gótico Plateado Brillante (+17% tamaño) con Avatar Mauricio a la derecha
+    # Encabezado (ASISTENTE MÉDICO) con foto i7 aumentada 19% (~60px)
+    # Título: Sans Serif, Extra Bold (900), Itálica, Dorado Brillante
+    # Subtítulo: Copperplate, Plateado Brillante, Alineado con Avatar a la derecha
     st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
         <h1>
@@ -427,16 +426,16 @@ def main():
             justify-content: center; 
             align-items: center; 
             gap: 20px;
-            font-family: 'UnifrakturMaguntia', cursive; 
-            font-size: 1.4rem; /* 1.2rem original + 17% aprox */
+            font-family: 'Copperplate', 'Copperplate Gothic', fantasy; 
+            font-size: 1.51rem; /* 1.4rem original + 8% aprox */
             color: #C0C0C0; /* Plateado */
             text-shadow: 0 0 5px #C0C0C0, 1px 1px 2px #000; /* Brillante */
         ">
-            <div>
+            <div style="text-align: right;">
                 Sistema Inteligente de Recordatorios Médicos<br>
                 Desarrollado por Mauricio Niño Gamboa. Enero 2026.
             </div>
-            <img src="{AVATAR_MAURICIO}" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid silver; box-shadow: 0 0 10px silver;">
+            <img src="{AVATAR_MAURICIO}" style="width: 65px; height: 65px; border-radius: 50%; border: 2px solid silver; box-shadow: 0 0 10px silver;">
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1247,4 +1246,3 @@ def mostrar_resumen_final():
 
 if __name__ == "__main__":
     main()
-
