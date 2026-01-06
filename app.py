@@ -16,7 +16,7 @@ import time
 import base64
 import os
 import random
-import hashlib # Agregado para optimización de velocidad (caching)
+import hashlib
 
 # ======================================================================
 # 0. CONFIGURACIÓN INICIAL
@@ -58,7 +58,7 @@ tz_co = pytz.timezone('America/Bogota')
 CIUDAD_URL = "https://i.ibb.co/QjpntM88/i6.png"
 ABUELO_URL = "https://i.ibb.co/spG69fPs/i7.png"
 PORTADA_URL = "https://i.ibb.co/jZb8bxGk/i8.jpg"
-AVATAR_MAURICIO = "https://i.ibb.co/zVFp4SmV/avatar-Mauricio.png"
+AVATAR_URL = "https://i.ibb.co/zVFp4SmV/avatar-Mauricio.png"
 
 FONDO_IMAGENES = [CIUDAD_URL, ABUELO_URL, PORTADA_URL]
 
@@ -67,26 +67,36 @@ FONDO_IMAGENES = [CIUDAD_URL, ABUELO_URL, PORTADA_URL]
 # ======================================================================
 
 def aplicar_estilos():
-    # Lógica de rotación de fondo optimizada
-    identificador_paso = f"{st.session_state.paso}_{st.session_state.subfase}"
+    # Lógica optimizada de fondo: solo cambia cuando el paso es diferente
+    paso_actual = st.session_state.paso
+    subfase_actual = st.session_state.subfase
     
-    if st.session_state.last_step_id != identificador_paso:
-        opciones_disponibles = [img for img in FONDO_IMAGENES if img != st.session_state.current_bg_url]
-        nueva_imagen = random.choice(opciones_disponibles)
+    # Crear identificador único para el estado actual
+    estado_id = f"{paso_actual}_{subfase_actual}"
+    
+    # Solo cambiar fondo si el estado ha cambiado
+    if st.session_state.last_step_id != estado_id:
+        # Seleccionar imagen que no sea la actual
+        opciones_disponibles = [img for img in FONDO_IMAGENES 
+                              if img != st.session_state.current_bg_url]
+        
+        if opciones_disponibles:
+            nueva_imagen = random.choice(opciones_disponibles)
+        else:
+            nueva_imagen = random.choice(FONDO_IMAGENES)
+        
         st.session_state.current_bg_url = nueva_imagen
-        st.session_state.last_step_id = identificador_paso
+        st.session_state.last_step_id = estado_id
+        st.session_state.last_played_text = ""  # Resetear audio al cambiar paso
 
     bg_image = st.session_state.current_bg_url
     
-    # Opacidad de la superposición (35% de blanco)
-    overlay_opacity = "0.35" 
+    # Opacidad de la superposición (35% de blanco sobre la imagen para reducir nitidez)
+    overlay_opacity = "0.35"
 
     st.markdown(f"""
     <style>
-        /* Importar fuente Gótica de Google Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
-
-        /* Fondo principal dinámico */
+        /* Fondo principal dinámico - OPTIMIZADO */
         .stApp {{
             background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #004d80 100%);
             background-image: 
@@ -110,25 +120,56 @@ def aplicar_estilos():
         }}
         
         /* Texto general NEGRO */
-        p, div, span, label, h2, h3, h4, h5, h6 {{
+        p, div, span, label, h1, h2, h3, h4, h5, h6 {{
             color: #000000 !important;
         }}
         
-        /* Título principal ASISTENTE MÉDICO (Gótico Dorado) */
+        /* Título principal - GÓTICO DORADO */
         h1 {{
-            font-family: 'UnifrakturMaguntia', cursive !important;
-            color: #FFD700 !important; /* Dorado */
+            color: #FFD700 !important; /* Dorado brillante */
             text-align: center;
-            font-weight: 400; /* Las fuentes góticas suelen ser gruesas por defecto */
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px #FFD700; /* Efecto brillante */
-            margin-bottom: 0.5rem;
+            font-weight: 900;
+            font-size: 2.85rem !important; /* 19% más grande de ~2.4rem */
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.5),
+                0 0 10px rgba(255, 215, 0, 0.7);
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 15px;
-            font-size: 3rem !important;
+            font-family: 'Times New Roman', Times, serif;
+            letter-spacing: 1px;
         }}
-
+        
+        /* Subtítulo - GÓTICO PLATEADO con avatar */
+        .subtitulo-con-avatar {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }}
+        
+        .subtitulo-texto {{
+            color: #C0C0C0 !important; /* Plateado brillante */
+            font-size: 1.17rem !important; /* 17% más grande de ~1rem */
+            font-weight: 700;
+            text-shadow: 
+                1px 1px 2px rgba(0, 0, 0, 0.5),
+                0 0 8px rgba(192, 192, 192, 0.5);
+            font-family: 'Times New Roman', Times, serif;
+            letter-spacing: 0.5px;
+        }}
+        
+        .avatar-subtitulo {{
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #C0C0C0;
+            box-shadow: 0 0 10px rgba(192, 192, 192, 0.7);
+        }}
+        
         /* Inputs */
         .stTextInput > div > div > input,
         .stNumberInput > div > div > input {{
@@ -140,19 +181,20 @@ def aplicar_estilos():
             font-size: 16px;
         }}
         
-        /* Botones */
+        /* ESTILO UNIFICADO PARA TODOS LOS BOTONES (Sí, No, Volver, Cancelar) */
         .stButton > button {{
-            background-color: #FFD700 !important;
-            color: #0000CD !important;
-            border: 3px solid #000000 !important;
+            background-color: #FFD700 !important; /* Amarillo Intenso */
+            color: #0000CD !important; /* Azul Intenso */
+            border: 3px solid #000000 !important; /* Borde Negro (Fondo Negro solicitado) */
             font-weight: 800 !important;
-            font-size: 1.2rem !important;
+            font-size: 1.2rem !important; /* 20% más grande */
             border-radius: 12px !important;
             padding: 0.5rem 1rem !important;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.4) !important;
             width: 100%;
         }}
         
+        /* Efecto Hover para botones */
         .stButton > button:hover {{
             transform: scale(1.02);
             box-shadow: 4px 4px 8px rgba(0,0,0,0.6) !important;
@@ -178,20 +220,23 @@ def aplicar_estilos():
             margin-top: 3rem;
             color: #000000 !important;
             font-weight: 600;
-            font-size: 0.8rem !important;
+            font-size: 0.8rem !important; /* Letra más pequeña */
         }}
 
         /* Responsividad */
         @media (max-width: 640px) {{
-            .main .block-container {{ padding: 1rem; }}
+            .main .block-container {{
+                padding: 1rem;
+            }}
             h1 {{ font-size: 2rem !important; }}
             .stButton > button {{ font-size: 1rem !important; }}
+            .subtitulo-texto {{ font-size: 1rem !important; }}
         }}
     </style>
     """, unsafe_allow_html=True)
 
 # ======================================================================
-# 2. FUNCIONES DE LÓGICA Y AUDIO (OPTIMIZADO)
+# 2. FUNCIONES DE LÓGICA
 # ======================================================================
 
 def obtener_dia_habil_anterior(fecha, festivos):
@@ -217,38 +262,61 @@ def verificar_conexion():
     except:
         return False
 
-# --- OPTIMIZACIÓN: CACHING DE AUDIO ---
-def generar_audio(texto):
-    """Genera audio solo si no existe, usando hash del texto como nombre."""
+# ======================================================================
+# 3. FUNCIONES DE VOZ Y NOTIFICACIONES
+# ======================================================================
+
+# Cache para audio generado
+_audio_cache = {}
+
+def generar_audio(texto, filename=None):
+    """Genera audio con cache para evitar regeneración"""
+    if not filename:
+        # Crear hash del texto para usar como nombre de archivo
+        texto_hash = hashlib.md5(texto.encode()).hexdigest()
+        filename = f"audio_{texto_hash}.mp3"
+    
+    # Verificar cache
+    if texto in _audio_cache and os.path.exists(_audio_cache[texto]):
+        return _audio_cache[texto]
+    
     try:
-        # Crear un hash único para el texto
-        hash_texto = hashlib.md5(texto.encode('utf-8')).hexdigest()
-        filename = f"audio_{hash_texto}.mp3"
-        
-        # Si el archivo ya existe, lo usamos (Optimización de velocidad)
-        if not os.path.exists(filename):
-            tts = gTTS(text=texto, lang='es', tld='com.co')
-            tts.save(filename)
-            
+        tts = gTTS(text=texto, lang='es', tld='com.co')
+        tts.save(filename)
+        _audio_cache[texto] = filename
         return filename
     except Exception as e:
         return None
 
 def calcular_espera_voz(texto):
-    # Aumentamos un poco el tiempo base para evitar superposiciones
-    return (len(texto) / 15) + 2.0 
+    """Calcula el tiempo aproximado que tarda en hablar el texto"""
+    # Estimación: ~15 caracteres por segundo + 1.5s base
+    return (len(texto) / 16) + 1.5
 
 def mostrar_mensaje_voz(texto, esperar=True):
+    """
+    Muestra mensaje y controla que el audio NO se repita si el texto es el mismo.
+    Espera solo si es la primera vez que se reproduce.
+    Optimizado para evitar superposición.
+    """
+    # Eliminar asteriscos del texto mostrado en pantalla
     texto_limpio = texto.replace("**", "")
     
+    # Crear identificador único para este texto en este contexto
+    contexto_id = f"{st.session_state.paso}_{st.session_state.subfase}"
+    audio_id = f"{contexto_id}_{hashlib.md5(texto_limpio.encode()).hexdigest()[:8]}"
+    
+    # Mostrar siempre la burbuja de texto visual
     st.markdown(f'<div class="mensaje-voz">🔊 <strong>Asistente:</strong> {texto_limpio}</div>', unsafe_allow_html=True)
     
-    # Evitar repetir el mismo audio si no ha cambiado el contexto
-    if st.session_state.last_played_text == texto_limpio:
-        return
-
-    st.session_state.last_played_text = texto_limpio
+    # Verificar si este audio ya fue reproducido en este contexto
+    if st.session_state.last_played_text == audio_id:
+        return  # Si ya se reprodujo, no hacer nada más
     
+    # Si es texto nuevo, procedemos a generar audio y esperar
+    st.session_state.last_played_text = audio_id
+    
+    # Generar audio (usando cache)
     audio_file = generar_audio(texto_limpio)
     if audio_file and os.path.exists(audio_file):
         with open(audio_file, 'rb') as f:
@@ -264,11 +332,26 @@ def mostrar_mensaje_voz(texto, esperar=True):
             <script>
                 var audio = document.getElementById("audio-{unique_id}");
                 audio.volume = 1.0;
-                audio.play().catch(function(error) {{ console.log(error); }});
+                
+                // Función para marcar audio como completado
+                audio.onended = function() {{
+                    console.log("Audio completado: {texto_limpio[:30]}...");
+                }};
+                
+                // Intentar reproducir
+                var playPromise = audio.play();
+                if (playPromise !== undefined) {{
+                    playPromise.catch(function(error) {{
+                        console.log("Autoplay bloqueado: " + error);
+                        // Forzar reproducción con interacción del usuario
+                        audio.play();
+                    }});
+                }}
             </script>
         """
         st.components.v1.html(audio_html, height=0)
         
+        # Esperar solo si es necesario y es la primera vez
         if esperar:
             duracion = calcular_espera_voz(texto_limpio)
             time.sleep(duracion)
@@ -343,15 +426,18 @@ def guardar_en_db(p):
 # ======================================================================
 
 def mostrar_boton_cancelar():
+    """Botón superior derecha: CANCELAR Y REGRESAR. Se llama solo en MAIN."""
     col_spacer, col_btn = st.columns([8, 2])
     with col_btn:
+        # El estilo ya está aplicado globalmente en aplicar_estilos()
         if st.button("CANCELAR Y REGRESAR", key="btn_cancel_global"):
             st.session_state.paso = 'menu_principal'
             st.session_state.subfase = 0
-            st.session_state.contexto_varias = False
+            st.session_state.contexto_varias = False # Resetear contexto
             st.rerun()
 
 def mostrar_flecha_volver():
+    """Flecha inferior derecha de retorno"""
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2 = st.columns([9, 1])
     with col2:
@@ -360,7 +446,9 @@ def mostrar_flecha_volver():
                 st.session_state.subfase -= 1
                 st.rerun()
             else:
+                # Si estamos en flujo varias, volver podría implicar regresar al menú de varias
                 if st.session_state.get('contexto_varias', False):
+                     # Lógica simplificada: Volver al inicio del sub-módulo o al menú
                      st.session_state.paso = 'flujo_varias'
                      st.session_state.subfase = 0
                 else:
@@ -401,9 +489,11 @@ def inicializar_session_state():
     if 'ver_historial' not in st.session_state: st.session_state.ver_historial = False
     if 'contexto_varias' not in st.session_state: st.session_state.contexto_varias = False
     
+    # Variables de estado para control de audio y fondo
     if 'last_played_text' not in st.session_state: st.session_state.last_played_text = ""
     if 'current_bg_url' not in st.session_state: st.session_state.current_bg_url = PORTADA_URL
     if 'last_step_id' not in st.session_state: st.session_state.last_step_id = ""
+    if 'audio_in_progress' not in st.session_state: st.session_state.audio_in_progress = False
 
 # ======================================================================
 # 6. INTERFAZ PRINCIPAL
@@ -413,33 +503,26 @@ def main():
     inicializar_session_state()
     aplicar_estilos()
     
-    # Encabezado (ASISTENTE MÉDICO) con foto i7 aumentada 19% (~60px) y letra gótica dorada brillante
-    # Subtítulo Gótico Plateado Brillante (+17% tamaño) con Avatar Mauricio a la derecha
+    # Encabezado (Con ícono de planificación y avatar pequeño al lado derecho)
+    # Se utiliza ABUELO_URL como avatar pequeño
     st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1>
+        <h1 style="margin: 0; display: inline-flex; align-items: center; justify-content: center;">
             ASISTENTE MÉDICO 📅 
-            <img src="{ABUELO_URL}" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; border: 2px solid white; box-shadow: 0px 0px 5px rgba(0,0,0,0.5);">
+            <img src="{ABUELO_URL}" style="width: 60px; height: 60px; border-radius: 50%; margin-left: 10px; border: 2px solid #FFD700; box-shadow: 0px 0px 10px rgba(255, 215, 0, 0.7);">
         </h1>
-        
-        <div style="
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            gap: 20px;
-            font-family: 'UnifrakturMaguntia', cursive; 
-            font-size: 1.4rem; /* 1.2rem original + 17% aprox */
-            color: #C0C0C0; /* Plateado */
-            text-shadow: 0 0 5px #C0C0C0, 1px 1px 2px #000; /* Brillante */
-        ">
-            <div>
-                Sistema Inteligente de Recordatorios Médicos<br>
-                Desarrollado por Mauricio Niño Gamboa. Enero 2026.
-            </div>
-            <img src="{AVATAR_MAURICIO}" style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid silver; box-shadow: 0 0 10px silver;">
-        </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Subtítulo con avatar y estilo gótico plateado
+    st.markdown(f"""
+    <div class="subtitulo-con-avatar">
+        <span class="subtitulo-texto">Sistema Inteligente de Recordatorios Médicos</span>
+        <img src="{AVATAR_URL}" class="avatar-subtitulo" alt="Avatar Mauricio">
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.caption("Desarrollado por Mauricio Niño Gamboa. Enero 2026.")
     
     # Mostrar botón cancelar solo si estamos en un flujo activo
     if st.session_state.paso in ['flujo_medicinas', 'flujo_examenes', 'flujo_citas', 'flujo_varias', 'flujo_fechas_programadas']:
@@ -453,8 +536,7 @@ def main():
                 st.stop()
             else:
                 st.success("Conexión establecida correctamente")
-                # Reducimos sleep para mejorar velocidad
-                time.sleep(0.5)
+                time.sleep(1)
         
         mostrar_mensaje_voz("Bienvenido al gestor de salud. Realizaremos preguntas para calcular o registrar sus fechas médicas importantes.")
         st.session_state.paso = 'solicitar_nombre'
@@ -492,7 +574,7 @@ def main():
     elif st.session_state.paso == 'mostrar_resumen':
         mostrar_resumen_final()
     
-    # Footer pequeño (Sin cambios solicitados, mantenido)
+    # Footer pequeño
     st.markdown(f"""
     <div class='footer'>
         🏥 ASISTENTE DE AGENDAMIENTO Y RECORDATORIO<br>
@@ -1021,7 +1103,8 @@ def flujo_fechas_programadas_streamlit():
     p = st.session_state.paciente
     
     if st.session_state.subfase == 0:
-        mostrar_mensaje_voz("Evaluaremos sus citas programadas.")
+        # NARRACIÓN AÑADIDA para "Registrar Fecha Programada"
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Pasamos a registrar citas programadas.")
         st.session_state.subfase = 1
         st.rerun()
         
@@ -1052,7 +1135,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 3:
-        mostrar_mensaje_voz("Por favor, especifique el tipo de examen.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Especifique el tipo de examen:")
         tipo = st.text_input("Especifique:")
         if st.button("Confirmar"):
             p['prog_tipo'] = tipo
@@ -1060,7 +1143,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 4:
-        mostrar_mensaje_voz("Indíqueme el lugar.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}¿En qué lugar es el examen?")
         lug = st.text_input("Lugar:")
         if st.button("Confirmar Lugar"):
             p['prog_lugar'] = lug
@@ -1068,7 +1151,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 5:
-        mostrar_mensaje_voz("Por favor, la fecha futura de la cita.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Ingrese la fecha futura del examen (DD/MM/AAAA):")
         fecha = st.text_input("Fecha Futura (DD/MM/AAAA):")
         if st.button("Confirmar Fecha"):
             if validar_fecha(fecha, futura=True):
@@ -1079,7 +1162,7 @@ def flujo_fechas_programadas_streamlit():
                 st.error("Fecha inválida (debe ser posterior a 31/05/2025).")
 
     elif st.session_state.subfase == 6:
-        mostrar_mensaje_voz("Finalmente, la hora de la cita.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Ingrese la hora del examen (HH:MM):")
         hora = st.text_input("Hora (HH:MM):")
         if st.button("Confirmar Hora"):
             if validar_hora(hora):
@@ -1104,7 +1187,7 @@ def flujo_fechas_programadas_streamlit():
                 st.stop()
 
     elif st.session_state.subfase == 11:
-        mostrar_mensaje_voz("Seleccione el tipo de cita.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Seleccione el tipo de cita:")
         opciones = ["Medicina General", "Especialista", "Oncología", "Odontología", "Otra"]
         sel = st.radio("Tipo Cita:", opciones)
         if st.button("Confirmar Tipo"):
@@ -1117,7 +1200,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 12:
-        mostrar_mensaje_voz("Especifique la especialidad.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Especifique la especialidad:")
         esp = st.text_input("Especialidad:")
         if st.button("Confirmar"):
             p['prog_tipo'] = esp
@@ -1125,7 +1208,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 13:
-        mostrar_mensaje_voz("Indíqueme el lugar.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}¿En qué lugar es la cita?")
         lug = st.text_input("Lugar:")
         if st.button("Confirmar Lugar"):
             p['prog_lugar'] = lug
@@ -1133,7 +1216,7 @@ def flujo_fechas_programadas_streamlit():
             st.rerun()
             
     elif st.session_state.subfase == 14:
-        mostrar_mensaje_voz("Por favor, la fecha futura de la cita.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Ingrese la fecha futura de la cita (DD/MM/AAAA):")
         fecha = st.text_input("Fecha Futura (DD/MM/AAAA):")
         if st.button("Confirmar Fecha"):
             if validar_fecha(fecha, futura=True):
@@ -1144,7 +1227,7 @@ def flujo_fechas_programadas_streamlit():
                 st.error("Fecha inválida.")
                 
     elif st.session_state.subfase == 15:
-        mostrar_mensaje_voz("Finalmente, la hora de la cita.")
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Ingrese la hora de la cita (HH:MM):")
         hora = st.text_input("Hora (HH:MM):")
         if st.button("Confirmar Hora"):
             if validar_hora(hora):
@@ -1188,34 +1271,34 @@ def mostrar_resumen_final():
     p = st.session_state.paciente
     st.markdown("## 📋 RESUMEN FINAL")
     
-    print("\n--- RESUMEN DE FECHAS ---")
+    # Sistema de espera secuencial para evitar superposición
+    mensajes_a_mostrar = []
     
-    # Lógica corregida para el Resumen:
-    # 1. Definir los mensajes exactamente como se solicitaron
-    # 2. Reproducirlos secuencialmente controlando la espera
-    
-    mensajes_resumen = []
-
     if "prox_retiro_dt" in p:
         msg = f"Su próximo retiro de medicina ({p.get('med_tipo', '')}) es el {p['prox_retiro_dt'].strftime('%d/%m/%Y')}"
-        st.success(msg)
-        mensajes_resumen.append(msg)
+        mensajes_a_mostrar.append((msg, "success"))
         
     if "prox_examen_dt" in p:
         msg = f"Su examen ({p.get('ex_tipo', '')}) debe solicitarse el {p['prox_examen_dt'].strftime('%d/%m/%Y')}"
-        st.info(msg)
-        mensajes_resumen.append(msg)
+        mensajes_a_mostrar.append((msg, "info"))
         
     if "prox_cita_dt" in p and p["prox_cita_dt"]:
         msg = f"Su cita ({p.get('cita_tipo', '')}) debe solicitarse el {p['prox_cita_dt'].strftime('%d/%m/%Y')}"
-        st.warning(msg)
-        mensajes_resumen.append(msg)
+        mensajes_a_mostrar.append((msg, "warning"))
+    
+    # Mostrar y narrar mensajes en secuencia
+    for msg, tipo in mensajes_a_mostrar:
+        if tipo == "success":
+            st.success(msg)
+        elif tipo == "info":
+            st.info(msg)
+        elif tipo == "warning":
+            st.warning(msg)
         
-    # Reproducción secuencial de los mensajes del resumen
-    # Se concatenan en el estado si es necesario, pero aquí usaremos la función con espera estricta
-    for msg in mensajes_resumen:
+        # Narrar con espera adecuada
         mostrar_mensaje_voz(msg, esperar=True)
-
+        time.sleep(0.5)  # Pequeña pausa entre mensajes
+        
     if guardar_en_db(p):
         st.success("Datos guardados en BD.")
         notif = f"Recibirá notificaciones en {EMAIL_RECEIVER} y Telegram {TELEGRAM_DISPLAY_PHONE}"
@@ -1223,26 +1306,27 @@ def mostrar_resumen_final():
         mostrar_mensaje_voz(notif, esperar=True)
         
     st.markdown("---")
-    mostrar_mensaje_voz(f"{gestionar_nombre()}¿Tiene algún otro requerimiento?", esperar=True)
+    mostrar_mensaje_voz(f"{gestionar_nombre()}¿Tiene algún otro requerimiento?")
     
     c1, c2 = st.columns(2)
     with c1:
         if st.button("Sí, Nuevo Requerimiento"):
-            st.session_state.paso = 'menu_principal'
+            # Limpieza eficiente del estado
             nom = st.session_state.nombre_paciente
+            st.session_state.paso = 'menu_principal'
             st.session_state.paciente = {"paciente": nom}
             st.session_state.subfase = 0
             st.session_state.contexto_varias = False
+            st.session_state.last_played_text = ""  # Resetear audio
             st.rerun()
     with c2:
         if st.button("No, Finalizar"):
             mostrar_mensaje_voz("Gracias por usar nuestro servicio.", esperar=True)
-            
-            # Optimización para evitar congelamiento
-            # Reducir tiempos y evitar bloqueos largos
             st.balloons()
-            time.sleep(2) # Reducido de 3 a 2 para mayor fluidez
-            st.session_state.clear()
+            time.sleep(2)  # Reducido de 3 a 2 segundos
+            # Limpieza optimizada del estado
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
             st.rerun()
 
 if __name__ == "__main__":
