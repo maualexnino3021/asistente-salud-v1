@@ -655,11 +655,8 @@ def flujo_medicinas_streamlit():
                 st.rerun()
         with col2:
             if st.button("No", key="mo_no"):
-                if st.button("Otra Especialidad"):
-                    st.session_state.subfase = 3
-                    st.rerun()
-                p['med_tipo'] = "especialidad no especificada"
-                st.session_state.subfase = 5
+                # MODIFICACIÓN: Si no es Oncología, se dirige a especificar manualmente (Subfase 3)
+                st.session_state.subfase = 3
                 st.rerun()
 
     elif st.session_state.subfase == 5:
@@ -757,7 +754,17 @@ def flujo_examenes_streamlit():
                 st.rerun()
         with col2:
             if st.button("No", key="ex_rt_no"):
-                p['ex_tipo'] = "examen no especificado"
+                # MODIFICACIÓN: En lugar de asignar "no especificado", va a una nueva subfase para ingresar texto.
+                st.session_state.subfase = 41
+                st.rerun()
+    
+    # NUEVA SUBFASE PARA OTROS EXÁMENES
+    elif st.session_state.subfase == 41:
+        mostrar_mensaje_voz(f"{gestionar_nombre()}Por favor, especifique qué otro tipo de examen requiere")
+        otro_ex = st.text_input("Otro Examen:", key="ex_otro_input")
+        if st.button("Confirmar Tipo"):
+            if otro_ex.strip():
+                p['ex_tipo'] = otro_ex.strip()
                 st.session_state.subfase = 5
                 st.rerun()
 
