@@ -311,13 +311,14 @@ def guardar_en_db(p):
             prox_cita DATE,
             prog_categoria VARCHAR(100),
             prog_fecha DATE,
-            prog_hora VARCHAR(10)
+            prog_hora VARCHAR(10),
+            enviado INT DEFAULT 0
         )
         """)
         query = """
             INSERT INTO registros_salud
-            (paciente, fecha_registro, med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha, prog_hora)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (paciente, fecha_registro, med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha, prog_hora, enviado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0)
         """
         vals = (
             p.get('paciente'), datetime.now(tz_co).replace(tzinfo=None),
