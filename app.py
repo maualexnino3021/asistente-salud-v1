@@ -298,6 +298,8 @@ def guardar_en_db(p):
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
+        
+        # MODIFICACIÓN: Se agregan las columnas de lugar al CREATE TABLE
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS registros_salud (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -307,27 +309,42 @@ def guardar_en_db(p):
             prox_retiro DATE,
             ex_tipo VARCHAR(100),
             prox_examen DATE,
+            ex_lugar VARCHAR(200),
             cita_tipo VARCHAR(100),
             prox_cita DATE,
+            cita_lugar VARCHAR(200),
             prog_categoria VARCHAR(100),
             prog_fecha DATE,
             prog_hora VARCHAR(10),
+            prog_lugar VARCHAR(200),
             enviado INT DEFAULT 0
         )
         """)
+        
+        # MODIFICACIÓN: Se incluyen los lugares en el INSERT para que Make no reciba datos vacíos
         query = """
             INSERT INTO registros_salud
-            (paciente, fecha_registro, med_tipo, prox_retiro, ex_tipo, prox_examen, cita_tipo, prox_cita, prog_categoria, prog_fecha, prog_hora, enviado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0)
+            (paciente, fecha_registro, med_tipo, prox_retiro, 
+             ex_tipo, prox_examen, ex_lugar,
+             cita_tipo, prox_cita, cita_lugar,
+             prog_categoria, prog_fecha, prog_hora, prog_lugar, enviado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 0)
         """
         vals = (
-            p.get('paciente'), datetime.now(tz_co).replace(tzinfo=None),
-            p.get('med_tipo'), p['prox_retiro_dt'].date() if 'prox_retiro_dt' in p else None,
-            p.get('ex_tipo'), p['prox_examen_dt'].date() if 'prox_examen_dt' in p else None,
-            p.get('cita_tipo'), p['prox_cita_dt'].date() if 'prox_cita_dt' in p and p['prox_cita_dt'] else None,
+            p.get('paciente'), 
+            datetime.now(tz_co).replace(tzinfo=None),
+            p.get('med_tipo'), 
+            p['prox_retiro_dt'].date() if 'prox_retiro_dt' in p else None,
+            p.get('ex_tipo'), 
+            p['prox_examen_dt'].date() if 'prox_examen_dt' in p else None,
+            p.get('ex_lugar'), 
+            p.get('cita_tipo'), 
+            p['prox_cita_dt'].date() if 'prox_cita_dt' in p and p['prox_cita_dt'] else None,
+            p.get('cita_lugar'),
             p.get('prog_categoria'),
             datetime.strptime(p['prog_fecha_str'], "%d/%m/%Y").date() if 'prog_fecha_str' in p else None,
-            p.get('prog_hora')
+            p.get('prog_hora'),
+            p.get('prog_lugar')
         )
         cursor.execute(query, vals)
         conn.commit()
