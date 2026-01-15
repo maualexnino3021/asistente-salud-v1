@@ -30,24 +30,24 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Configuración de Base de Datos
+# Configuración de Base de Datos (Leída desde Streamlit Secrets)
 DB_CONFIG = {
-    'host': 'gateway01.us-east-1.prod.aws.tidbcloud.com',
-    'port': 4000,
-    'user': '39hpidXc8KL7sEA.root',
-    'password': 'HwJbEPQQNL7rhRjF',
-    'database': 'test',
+    'host': st.secrets["db_credentials"]["host"],
+    'port': st.secrets["db_credentials"]["port"],
+    'user': st.secrets["db_credentials"]["user"],
+    'password': st.secrets["db_credentials"]["password"],
+    'database': st.secrets["db_credentials"]["database"],
     'autocommit': True,
     'ssl_verify_cert': True,
     'ssl_ca': '/etc/ssl/certs/ca-certificates.crt'
 }
 
-# Credenciales de Notificaciones
-TELEGRAM_TOKEN = '8444851001:AAEZBqfJcgUasPLeu1nsD2xcG0OrkPvrwbM'
-EMAIL_APP_PASSWORD = 'wspb oiqd zriv tqpl'
+# Credenciales de Notificaciones (Leídas desde Streamlit Secrets)
+TELEGRAM_TOKEN = st.secrets["telegram"]["token"]
+EMAIL_APP_PASSWORD = st.secrets["email"]["app_password"]
 EMAIL_SENDER = 'unamauricio2013@gmail.com'
 EMAIL_RECEIVER = 'maualexnino@gmail.com'
-TELEGRAM_CHAT_ID_INTERNAL = '1677957851' # ID Real para envío
+TELEGRAM_CHAT_ID_INTERNAL = st.secrets["telegram"]["chat_id"] # ID Real para envío
 TELEGRAM_DISPLAY_PHONE = "🇨🇴 +57 324 2818869" # ID Visual para usuario
 
 # Configuración de Festivos y Zona Horaria Colombia
@@ -212,7 +212,7 @@ def verificar_conexion():
         if conn.is_connected():
             conn.close()
             return True
-    except:
+    except Exception:
         return False
 
 # --- OPTIMIZACIÓN: CACHING DE AUDIO ---
@@ -457,7 +457,7 @@ def main():
     if st.session_state.paso == 'bienvenida':
         with st.spinner('Verificando conexión con el sistema de salud...'):
             if not verificar_conexion():
-                st.error("No se pudo establecer conexión con la base de datos.")
+                st.error("No se pudo establecer conexión con la base de datos. Verifique los secretos de la aplicación.")
                 st.stop()
             else:
                 st.success("Conexión establecida correctamente")
